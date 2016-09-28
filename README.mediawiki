@@ -1,0 +1,3 @@
+微信公众号Hura的后端服务，一个世界语词典服务。
+
+Servo de WeChat abonkonto Hura, servo de Esperanta vortaro.
