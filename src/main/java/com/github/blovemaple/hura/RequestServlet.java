@@ -10,10 +10,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.blovemaple.hura.vortaro.Vortaro;
+import com.github.blovemaple.hura.vortaro.Wiktionary;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
 
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+
+	private Vortaro vortaro = new Wiktionary();
 
 	public RequestServlet() {
 		super();
@@ -37,8 +41,8 @@ public class RequestServlet extends HttpServlet {
 		try {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
-					writeResponse("Bonvolu!\nĈi tiu estas Esperanto interaktiva vortaro, konstruata. :)", message,
-							response);
+					writeResponse("Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi vorton al mi. :)",
+							message, response);
 					return;
 				} else
 					noResponse(response);
@@ -49,10 +53,15 @@ public class RequestServlet extends HttpServlet {
 					noResponse(response);
 					return;
 				}
-				writeResponse("Ĉi tiu servo konstruatas! :)\nVia enigo estas: " + reqContent, message, response);
+				String result = vortaro.query(reqContent);
+				if (result != null && !result.isEmpty()) {
+					writeResponse(result, message, response);
+				} else {
+					writeResponse("Mi ne povas trovi ĉi tiun vorton. :(", message, response);
+				}
 				return;
 			} else {
-				writeResponse("Bonvolu sendi teksto. :)", message, response);
+				writeResponse("Bonvolu sendi vorton. :)", message, response);
 				return;
 			}
 
