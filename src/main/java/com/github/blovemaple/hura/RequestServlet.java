@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -41,7 +43,8 @@ public class RequestServlet extends HttpServlet {
 		try {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
-					writeResponse("Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi vorton al mi. :)",
+					writeResponse(
+							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi vorton al mi. :)",
 							message, response);
 					return;
 				} else
@@ -53,7 +56,7 @@ public class RequestServlet extends HttpServlet {
 					noResponse(response);
 					return;
 				}
-				String result = vortaro.query(reqContent);
+				String result = vortaro.query(formatWord(reqContent));
 				if (result != null && !result.isEmpty()) {
 					writeResponse(result, message, response);
 				} else {
@@ -88,6 +91,31 @@ public class RequestServlet extends HttpServlet {
 			return null;
 		}
 		return XmlUtils.fromXml(strWriter.toString(), Message.class);
+	}
+
+	private static final Map<String, String> REPLACE_LETTERS = new HashMap<>();
+	static {
+		REPLACE_LETTERS.put("cx", "ĉ");
+		REPLACE_LETTERS.put("gx", "ĝ");
+		REPLACE_LETTERS.put("hx", "ĥ");
+		REPLACE_LETTERS.put("jx", "ĵ");
+		REPLACE_LETTERS.put("sx", "ŝ");
+		REPLACE_LETTERS.put("ux", "ŭ");
+		REPLACE_LETTERS.put("ch", "ĉ");
+		REPLACE_LETTERS.put("gh", "ĝ");
+		REPLACE_LETTERS.put("hh", "ĥ");
+		REPLACE_LETTERS.put("jh", "ĵ");
+		REPLACE_LETTERS.put("sh", "ŝ");
+		REPLACE_LETTERS.put("uh", "ŭ");
+		REPLACE_LETTERS.put("au", "aŭ");
+		REPLACE_LETTERS.put("eu", "eŭ");
+	}
+
+	private static String formatWord(String reqContent) {
+		String word = reqContent.trim().toLowerCase();
+		for (Map.Entry<String, String> replace : REPLACE_LETTERS.entrySet())
+			word = word.replaceAll(replace.getKey(), replace.getValue());
+		return word;
 	}
 
 	private void writeResponse(String resContent, Message reqMessage, HttpServletResponse response) throws IOException {
