@@ -3,5 +3,5 @@
 Servo de WeChat abonkonto Hura, servo de Esperanta vortaro.
 
 已知问题：
-#CSS样式信息没有过滤
 #处理时间有可能超过5秒导致不能及时返回
+#查询结果需要优化
