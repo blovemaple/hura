@@ -12,14 +12,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.blovemaple.hura.vortaro.ChenVortaro;
 import com.github.blovemaple.hura.vortaro.Vortaro;
-import com.github.blovemaple.hura.vortaro.Wiktionary;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
 
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	private Vortaro vortaro = new Wiktionary();
+	private Vortaro vortaro = new ChenVortaro(); // new Wiktionary();
 
 	public RequestServlet() {
 		super();
