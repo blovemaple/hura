@@ -50,13 +50,17 @@ public class ChenVortaro implements Vortaro {
 
 			if (hasChinese(vorto)) {
 				// 输入是中文
-				// 取所有结果
+				// 取所有结果，但根据微信要求不能达到2048字节
 				StringBuilder result = new StringBuilder();
-				queryResult.getList().forEach(item -> {
-					result.append('【').append(item.getRadiko()).append('】').append('\n');
-					result.append(item.getSignifo()).append('\n');
-					result.append('\n');
-				});
+				int byteCount = 0;
+				for (ListItem item : queryResult.getList()) {
+					String itemStr = '【' + item.getRadiko() + '】' + '\n' + item.getSignifo() + '\n' + '\n';
+					int itemByteCount = itemStr.toString().getBytes("utf-8").length;
+					if (byteCount + itemByteCount < 2048) {
+						result.append(itemStr);
+						byteCount += itemByteCount;
+					}
+				}
 				result.delete(result.length() - 2, result.length());
 				return result.toString();
 			} else {
@@ -76,7 +80,7 @@ public class ChenVortaro implements Vortaro {
 
 	public static void main(String[] args) throws IOException {
 		ChenVortaro v = new ChenVortaro();
-		System.out.println(v.query("恐怖"));
+		System.out.println(v.query("什么"));
 	}
 
 	private static boolean hasChinese(String str) {
