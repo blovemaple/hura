@@ -3,6 +3,8 @@ package com.github.blovemaple.hura.vortaro;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -39,6 +41,10 @@ public class ChenVortaro implements Vortaro {
 
 	@Override
 	public String query(String vorto) throws IOException {
+		if ("aaaaa".equals(vorto)) {
+			// 方便调试
+			return String.join("\n", Files.readAllLines(Paths.get("/home/blove/tmp/test")));
+		}
 		try {
 			ChenQueryResult queryResult = queryResult(vorto);
 			if (queryResult.getStatus() == 0)
@@ -80,7 +86,7 @@ public class ChenVortaro implements Vortaro {
 
 	public static void main(String[] args) throws IOException {
 		ChenVortaro v = new ChenVortaro();
-		System.out.println(v.query("什么"));
+		System.out.println(v.query("恐怖"));
 	}
 
 	private static boolean hasChinese(String str) {
