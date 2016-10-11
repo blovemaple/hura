@@ -57,7 +57,7 @@ public class ChenVortaro implements Vortaro {
 					result.append(item.getSignifo()).append('\n');
 					result.append('\n');
 				});
-				result.deleteCharAt(result.length() - 1);
+				result.delete(result.length() - 2, result.length());
 				return result.toString();
 			} else {
 				// 输入是世界语
@@ -76,7 +76,7 @@ public class ChenVortaro implements Vortaro {
 
 	public static void main(String[] args) throws IOException {
 		ChenVortaro v = new ChenVortaro();
-		System.out.println(v.query("ĵaro"));
+		System.out.println(v.query("恐怖"));
 	}
 
 	private static boolean hasChinese(String str) {
