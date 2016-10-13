@@ -104,7 +104,7 @@ public class ChenVortaro implements Vortaro {
 	}
 
 	private String queryRaw(String vorto) throws ParseException, IOException, URISyntaxException {
-		URIBuilder builder = new URIBuilder("http://120.76.43.226/vorto/search.php");
+		URIBuilder builder = new URIBuilder("http://120.76.43.226/vorto/wxapi.php");
 		builder.setParameter("key", key) //
 				.setParameter("str", vorto);
 		builder.setCharset(Charset.forName("UTF-8"));
