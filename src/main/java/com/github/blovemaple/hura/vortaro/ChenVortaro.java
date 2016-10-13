@@ -33,7 +33,7 @@ public class ChenVortaro implements Vortaro {
 	private String key;
 	{
 		try {
-			key = Conf.str("prvate", "chenvortaro.key");
+			key = Conf.str("private", "chenvortaro.key");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -86,7 +86,7 @@ public class ChenVortaro implements Vortaro {
 
 	public static void main(String[] args) throws IOException {
 		ChenVortaro v = new ChenVortaro();
-		System.out.println(v.query("恐怖"));
+		System.out.println(v.query("jaro"));
 	}
 
 	private static boolean hasChinese(String str) {
@@ -111,7 +111,8 @@ public class ChenVortaro implements Vortaro {
 		HttpGet get = new HttpGet(builder.build());
 		HttpClient http = HttpClients.createSystem();
 		HttpResponse response = http.execute(get);
-		return EntityUtils.toString(response.getEntity());
+		String responseStr = EntityUtils.toString(response.getEntity());
+		return responseStr;
 	}
 
 }
