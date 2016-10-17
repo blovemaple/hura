@@ -44,7 +44,7 @@ public class RequestServlet extends HttpServlet {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse(
-							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi esperanta aŭ la ĉina vorton al mi.\n"
+							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi esperantan aŭ la ĉinan vorton al mi.\n"
 							+ "欢迎关注Hura！Hura是一个世界语汉语双向词典，向我发送世界语单词或汉语词语即可得到解释。 :)",
 							message, response);
 					return;
