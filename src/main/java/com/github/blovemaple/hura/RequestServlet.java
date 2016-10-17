@@ -44,7 +44,8 @@ public class RequestServlet extends HttpServlet {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse(
-							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi vorton al mi. :)",
+							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi esperanta aŭ la ĉina vorton al mi.\n"
+							+ "欢迎关注Hura！Hura是一个世界语汉语双向词典，向我发送世界语单词或汉语词语即可得到解释。 :)",
 							message, response);
 					return;
 				} else
@@ -60,17 +61,17 @@ public class RequestServlet extends HttpServlet {
 				if (result != null && !result.isEmpty()) {
 					writeResponse(result, message, response);
 				} else {
-					writeResponse("Mi ne povas trovi ĉi tiun vorton. :(", message, response);
+					writeResponse("Mi ne povas trovi ĉi tiun vorton.\n抱歉，我查不到你输入的单词。 :(", message, response);
 				}
 				return;
 			} else {
-				writeResponse("Bonvolu sendi vorton. :)", message, response);
+				writeResponse("Bonvolu sendi vorton.\n请输入正确的单词哦。 :)", message, response);
 				return;
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			writeResponse("Mi ne povas rekoni vian enigon. :(", message, response);
+			writeResponse("Mi ne povas rekoni vian enigon.\n抱歉，我看不懂你在写什么。 :(", message, response);
 			return;
 		}
 	}
