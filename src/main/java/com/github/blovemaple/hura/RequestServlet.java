@@ -121,10 +121,19 @@ public class RequestServlet extends HttpServlet {
 		return word;
 	}
 
-	private String query(String vorto) throws IOException {
-		String result = chenVortaro.query(vorto);
+	private String query(String vorto) {
+		String result = null;
+		try {
+			result = chenVortaro.query(vorto);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		if (result == null)
-			result = googleTrans.query(vorto);
+			try {
+				result = googleTrans.query(vorto);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		return result;
 	}
 
