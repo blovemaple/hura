@@ -1,5 +1,7 @@
 package com.github.blovemaple.hura.vortaro;
 
+import static com.github.blovemaple.hura.util.MyUtils.*;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -8,6 +10,8 @@ import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
@@ -71,9 +75,16 @@ public class ChenVortaro implements Vortaro {
 				return result.toString();
 			} else {
 				// 输入是世界语
-				// 只取完全匹配的一个单词的释义
-				return queryResult.getList().stream().filter(item -> item.getRadiko().equalsIgnoreCase(vorto)).findAny()
-						.map(ListItem::getSignifo).orElse(null);
+				// 只取完全匹配的单词的释义
+				List<String> results = queryResult.getList().stream()
+						.filter(item -> item.getRadiko().equalsIgnoreCase(vorto)).map(ListItem::getSignifo)
+						.collect(Collectors.toList());
+				if (results.isEmpty())
+					return null;
+				else if (results.size() == 1)
+					return results.get(0);
+				else
+					return String.join("\n", results);
 			}
 		} catch (URISyntaxException e) {
 			// 不可能
@@ -87,15 +98,6 @@ public class ChenVortaro implements Vortaro {
 	public static void main(String[] args) throws IOException {
 		ChenVortaro v = new ChenVortaro();
 		System.out.println(v.query("jaro"));
-	}
-
-	private static boolean hasChinese(String str) {
-		return str.chars().anyMatch(c -> isChinese((char) c));
-	}
-
-	private static boolean isChinese(char a) {
-		int v = (int) a;
-		return (v >= 19968 && v <= 171941);
 	}
 
 	private ChenQueryResult queryResult(String vorto) throws URISyntaxException, ParseException, IOException,
