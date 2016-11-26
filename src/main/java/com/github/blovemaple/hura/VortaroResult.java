@@ -14,6 +14,11 @@ public class VortaroResult {
 	private VortaroSource source;
 	private List<VortaroSourceResult> results;
 
+	public VortaroResult(VortaroSource source, List<VortaroSourceResult> results) {
+		this.source = source;
+		this.results = results;
+	}
+
 	protected VortaroSource getSource() {
 		return source;
 	}

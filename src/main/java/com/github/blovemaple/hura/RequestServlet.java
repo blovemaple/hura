@@ -98,8 +98,8 @@ public class RequestServlet extends HttpServlet {
 	private static String resultsToString(List<VortaroResult> results) {
 		int maxSingleSize = MAX_RESULT_LENGTH / results.size();
 		StringBuilder str = new StringBuilder();
-		results.forEach(result -> str.append(resultToString(result, maxSingleSize)));
-		return str.deleteCharAt(str.length() - 1).toString();
+		results.forEach(result -> str.append(resultToString(result, maxSingleSize)).append("\n\n"));
+		return str.deleteCharAt(str.length() - 1).deleteCharAt(str.length() - 1).toString();
 	}
 
 	private static String resultToString(VortaroResult result, int maxSize) {
@@ -122,7 +122,7 @@ public class RequestServlet extends HttpServlet {
 					break;
 				str.append(singleResultStr);
 			}
-			return str.toString();
+			return str.deleteCharAt(str.length() - 1).toString();
 		} catch (UnsupportedEncodingException e) {
 			// 不可能
 			e.printStackTrace();
@@ -131,7 +131,7 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println(resultsToString(new Vortaro().query("和")));
+		System.out.println(resultsToString(new Vortaro().query("愉快地交谈")));
 	}
 
 	private void writeResponse(String resContent, Message reqMessage, HttpServletResponse response) throws IOException {
