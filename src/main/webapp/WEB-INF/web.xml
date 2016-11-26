@@ -11,19 +11,9 @@
 		<description></description>
 		<servlet-class>com.github.blovemaple.hura.RequestServlet</servlet-class>
 	</servlet>
-	<servlet>
-		<servlet-name>RawWiktionaryServlet</servlet-name>
-		<display-name>RawWiktionaryServlet</display-name>
-		<description></description>
-		<servlet-class>com.github.blovemaple.hura.vortaro.RawWiktionaryServlet</servlet-class>
-	</servlet>
 
 	<servlet-mapping>
 		<servlet-name>RequestServlet</servlet-name>
 		<url-pattern>/request</url-pattern>
-	</servlet-mapping>
-	<servlet-mapping>
-		<servlet-name>RawWiktionaryServlet</servlet-name>
-		<url-pattern>/rawwiki</url-pattern>
 	</servlet-mapping>
 </web-app>

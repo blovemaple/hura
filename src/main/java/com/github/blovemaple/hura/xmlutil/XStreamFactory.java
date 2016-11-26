@@ -13,7 +13,7 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 
 /**
- * XStream¹¤³§Àà<br>
+ * XStreamå·¥å‚ç±»<br>
  * Created by GongXunyao on 2015/12/29.<br>
  * from: https://my.oschina.net/jarvan4dev/blog/649555
  */
@@ -23,9 +23,9 @@ public class XStreamFactory {
 		XStream xStream = new XStream(new XppDomDriver(nameCoder) {
 			@Override
 			public HierarchicalStreamWriter createWriter(Writer out) {
-				// Êä³ö¸ñÊ½»¯µÄxml×Ö·û´®
+				// è¾“å‡ºæ ¼å¼åŒ–çš„xmlå­—ç¬¦ä¸²
 				return new PrettyPrintWriter(out, nameCoder) {
-					// Êä³öÑ¹ËõµÄxml×Ö·û´®£¬É¾³ı¶àÓàµÄ¿Õ°×·û
+					// è¾“å‡ºå‹ç¼©çš„xmlå­—ç¬¦ä¸²ï¼Œåˆ é™¤å¤šä½™çš„ç©ºç™½ç¬¦
 					// return new CompactWriter (out, nameCoder) {
 					boolean cdata = false;
 					Class<?> targetClass = null;

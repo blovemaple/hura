@@ -3,6 +3,11 @@
  */
 package com.github.blovemaple.hura.util;
 
+/**
+ * 一些工具。
+ * 
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 public class MyUtils {
 
 	public static boolean hasChinese(String str) {

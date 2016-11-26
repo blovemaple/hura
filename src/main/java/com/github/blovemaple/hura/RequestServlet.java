@@ -16,6 +16,11 @@ import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
 
+/**
+ * 处理微信请求的servlet。
+ * 
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 

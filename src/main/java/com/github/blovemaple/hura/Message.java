@@ -3,6 +3,11 @@ package com.github.blovemaple.hura;
 import com.github.blovemaple.hura.xmlutil.XStreamCDATA;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
+/**
+ * 微信请求和返回给微信的消息。
+ * 
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 @XStreamAlias("xml")
 public class Message {
 	@XStreamCDATA

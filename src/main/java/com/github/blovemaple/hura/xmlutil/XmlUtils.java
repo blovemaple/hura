@@ -10,26 +10,26 @@ public class XmlUtils {
 	private static final XStream xStream = XStreamFactory.getXStream();
 
 	/**
-	 * Javabean ×ªXML
+	 * Javabean è½¬XML
 	 * 
 	 * @param t
-	 *            ´ý×ªjavabean¶ÔÏó
+	 *            å¾…è½¬javabeanå¯¹è±¡
 	 * @param <T>
-	 * @return xml×Ö·û´®
+	 * @return xmlå­—ç¬¦ä¸²
 	 */
 	public static <T> String toXml(T t) {
 		return xStream.toXML(t);
 	}
 
 	/**
-	 * XML×Ö·û´®×ªjavabean
+	 * XMLå­—ç¬¦ä¸²è½¬javabean
 	 * 
 	 * @param xmlStr
-	 *            xml×Ö·û´®
+	 *            xmlå­—ç¬¦ä¸²
 	 * @param cls
-	 *            beanÀà
+	 *            beanç±»
 	 * @param <T>
-	 * @return Java¶ÔÏó
+	 * @return Javaå¯¹è±¡
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T fromXml(String xmlStr, Class<T> cls) {

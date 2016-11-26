@@ -5,6 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * 获取配置的工具。
+ * 
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 public class Conf {
 	private static final Map<String, Properties> PROPS = new HashMap<>();
 
