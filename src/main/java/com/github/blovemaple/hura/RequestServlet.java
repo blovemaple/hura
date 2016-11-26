@@ -24,7 +24,14 @@ import com.github.blovemaple.hura.xmlutil.XmlUtils;
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * 响应长度限制
+	 */
 	private static final int MAX_RESULT_LENGTH = 2047;
+	/**
+	 * 查询超时，单位秒
+	 */
+	private static final int QUERY_TIMEOUT = 4;
 
 	private Vortaro vortaro = new Vortaro();
 
@@ -50,10 +57,9 @@ public class RequestServlet extends HttpServlet {
 		try {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
-					writeResponse(
-							"Bonvenon!\nMi estas interaktiva vortaro de Esperanto. Bonvolu sendi esperantan aŭ la ĉinan vorton al mi.\n"
-									+ "欢迎关注Hura！Hura是一个世界语汉语双向词典，向我发送世界语或汉语即可得到解释或翻译。 :)",
-							message, response);
+					writeResponse("Bonvenon!\n"
+							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我发送世界语或汉语即可得到解释或翻译。目前Hura的词典来源为陈在伟老师提供的词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
+							+ "目前Hura还不成熟，如有改进建议请直接留言。希望Hura能帮到你。 :)", message, response);
 					return;
 				} else
 					noResponse(response);
@@ -64,20 +70,20 @@ public class RequestServlet extends HttpServlet {
 					noResponse(response);
 					return;
 				}
-				List<VortaroResult> results = vortaro.query(reqContent);
+				List<VortaroResult> results = vortaro.query(reqContent, QUERY_TIMEOUT);
 				if (results != null && !results.isEmpty())
 					writeResponse(resultsToString(results), message, response);
 				else
-					writeResponse("Mi ne povas trovi ĉi tiun vorton.\n抱歉，我查不到你输入的内容。 :(", message, response);
+					writeResponse("Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂你输入的内容。 :(", message, response);
 				return;
 			} else {
-				writeResponse("Bonvolu sendi vorton.\n请输入正确的世界语或汉语哦。 :)", message, response);
+				writeResponse("Mi nur komprenas tekstojn.\n我只认识文字消息哦，给我发文字吧。 :)", message, response);
 				return;
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			writeResponse("Mi ne povas rekoni vian enigon.\n抱歉，我看不懂你在写什么。 :(", message, response);
+			writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，我出错了。请等会儿再用吧。 :(", message, response);
 			return;
 		}
 	}
@@ -136,7 +142,7 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println(resultsToString(new Vortaro().query("愉快地交谈")));
+		System.out.println(resultsToString(new Vortaro().query("吃", QUERY_TIMEOUT)));
 	}
 
 	private void writeResponse(String resContent, Message reqMessage, HttpServletResponse response) throws IOException {

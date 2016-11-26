@@ -140,8 +140,6 @@ public class Wiktionary implements VortaroSource {
 		parsingStr = StringEscapeUtils.unescapeHtml4(parsingStr);
 		parsingStr = StringEscapeUtils.unescapeJava(parsingStr);
 
-		System.out.println(parsingStr);
-
 		BufferedReader strReader = new BufferedReader(new StringReader(parsingStr));
 		String line;
 		String crtSubtitle = "";
