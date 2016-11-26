@@ -7,5 +7,6 @@
 .project
 .settings
 /target/
+/WebContent/
 
 private.properties
