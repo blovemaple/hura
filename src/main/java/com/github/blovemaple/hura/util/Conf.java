@@ -15,7 +15,7 @@ public class Conf {
 			try {
 				prop.load(Conf.class.getResourceAsStream("/" + file + ".properties"));
 			} catch (NullPointerException e) {
-				// 没这个文件
+				throw new IOException("Lack of conf file: " + file + ".properties");
 			}
 			PROPS.put(file, prop);
 		}

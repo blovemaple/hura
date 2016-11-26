@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura.vortaro;
+package com.github.blovemaple.hura.source;
 
 import static com.github.blovemaple.hura.util.MyUtils.*;
 
@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,8 +22,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import com.github.blovemaple.hura.source.ChenQueryResult.ListItem;
 import com.github.blovemaple.hura.util.Conf;
-import com.github.blovemaple.hura.vortaro.ChenQueryResult.ListItem;
 import com.google.gson.Gson;
 
 /**
@@ -30,7 +31,7 @@ import com.google.gson.Gson;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class ChenVortaro implements Vortaro {
+public class ChenVortaro implements VortaroSource {
 
 	private Gson gson = new Gson();
 
@@ -44,10 +45,16 @@ public class ChenVortaro implements Vortaro {
 	}
 
 	@Override
-	public String query(String vorto) throws IOException {
+	public String name() {
+		return "世汉词典";
+	}
+
+	@Override
+	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		if ("aaaaa".equals(vorto)) {
 			// 方便调试
-			return String.join("\n", Files.readAllLines(Paths.get("/home/blove/tmp/test")));
+			return Collections.singletonList(
+					new VortaroSourceResult(String.join("\n", Files.readAllLines(Paths.get("/home/blove/tmp/test")))));
 		}
 		try {
 			ChenQueryResult queryResult = queryResult(vorto);
@@ -60,19 +67,14 @@ public class ChenVortaro implements Vortaro {
 
 			if (hasChinese(vorto)) {
 				// 输入是中文
-				// 取所有结果，但根据微信要求不能达到2048字节
-				StringBuilder result = new StringBuilder();
-				int byteCount = 0;
-				for (ListItem item : queryResult.getList()) {
-					String itemStr = '【' + item.getRadiko() + '】' + '\n' + item.getSignifo() + '\n' + '\n';
-					int itemByteCount = itemStr.toString().getBytes("utf-8").length;
-					if (byteCount + itemByteCount < 2048) {
-						result.append(itemStr);
-						byteCount += itemByteCount;
-					}
-				}
-				result.delete(result.length() - 2, result.length());
-				return result.toString();
+				// 取所有在非括号内出现关键词的结果
+				return queryResult.getList().stream()
+						// 清理一下
+						.peek(this::cleanSignifo)
+						// 在非括号内出现关键词的结果
+						.filter(item -> isValidSignifo(item.getSignifo(), vorto))
+						.map(item -> new VortaroSourceResult(item.getRadiko(), item.getSignifo()))
+						.collect(Collectors.toList());
 			} else {
 				// 输入是世界语
 				// 只取完全匹配的单词的释义
@@ -82,9 +84,9 @@ public class ChenVortaro implements Vortaro {
 				if (results.isEmpty())
 					return null;
 				else if (results.size() == 1)
-					return results.get(0);
+					return Collections.singletonList(new VortaroSourceResult(results.get(0)));
 				else
-					return String.join("\n", results);
+					return results.stream().map(VortaroSourceResult::new).collect(Collectors.toList());
 			}
 		} catch (URISyntaxException e) {
 			// 不可能
@@ -93,11 +95,6 @@ public class ChenVortaro implements Vortaro {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
-	}
-
-	public static void main(String[] args) throws IOException {
-		ChenVortaro v = new ChenVortaro();
-		System.out.println(v.query("jaro"));
 	}
 
 	private ChenQueryResult queryResult(String vorto) throws URISyntaxException, ParseException, IOException,
@@ -115,6 +112,29 @@ public class ChenVortaro implements Vortaro {
 		HttpResponse response = http.execute(get);
 		String responseStr = EntityUtils.toString(response.getEntity());
 		return responseStr;
+	}
+
+	private void cleanSignifo(ChenQueryResult.ListItem item) {
+		item.setSignifo(item.getSignifo().replaceAll("\\/.+", "").replaceAll("参 考 资 料.*", "").trim());
+	}
+
+	private boolean isValidSignifo(String signifo, String vorto) {
+		String pureSignifo = signifo.replaceAll("\\[[^\\[\\]]+\\]", "");
+		while (!signifo.equals(pureSignifo)) {
+			signifo = pureSignifo;
+			pureSignifo = pureSignifo.replaceAll("\\[[^\\[\\]]+\\]", "");
+		}
+		return pureSignifo.contains(vorto);
+	}
+
+	public static void main(String[] args) {
+		String signifo = "[火车]哈哈[ef[78787]joei]";
+		String pureSignifo = signifo.replaceAll("\\[[^\\[\\]]+\\]", "");
+		while (!signifo.equals(pureSignifo)) {
+			signifo = pureSignifo;
+			pureSignifo = pureSignifo.replaceAll("\\[[^\\[\\]]+\\]", "");
+		}
+		System.out.println(pureSignifo);
 	}
 
 }

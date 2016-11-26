@@ -4,24 +4,24 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.github.blovemaple.hura.vortaro.ChenVortaro;
-import com.github.blovemaple.hura.vortaro.GoogleTranslate;
-import com.github.blovemaple.hura.vortaro.Vortaro;
+import com.github.blovemaple.hura.source.VortaroSource;
+import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
 
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	private Vortaro chenVortaro = new ChenVortaro(); // new Wiktionary();
-	private Vortaro googleTrans = new GoogleTranslate();
+	private static final int MAX_RESULT_LENGTH = 2047;
+
+	private Vortaro vortaro = new Vortaro();
 
 	public RequestServlet() {
 		super();
@@ -59,12 +59,11 @@ public class RequestServlet extends HttpServlet {
 					noResponse(response);
 					return;
 				}
-				String result = query(formatWord(reqContent));
-				if (result != null && !result.isEmpty()) {
-					writeResponse(result, message, response);
-				} else {
+				List<VortaroResult> results = vortaro.query(reqContent);
+				if (results != null && !results.isEmpty())
+					writeResponse(resultsToString(results), message, response);
+				else
 					writeResponse("Mi ne povas trovi ĉi tiun vorton.\n抱歉，我查不到你输入的内容。 :(", message, response);
-				}
 				return;
 			} else {
 				writeResponse("Bonvolu sendi vorton.\n请输入正确的世界语或汉语哦。 :)", message, response);
@@ -96,49 +95,43 @@ public class RequestServlet extends HttpServlet {
 		return XmlUtils.fromXml(strWriter.toString(), Message.class);
 	}
 
-	private static final Map<String, String> REPLACE_LETTERS = new HashMap<>();
-	static {
-		REPLACE_LETTERS.put("cx", "ĉ");
-		REPLACE_LETTERS.put("gx", "ĝ");
-		REPLACE_LETTERS.put("hx", "ĥ");
-		REPLACE_LETTERS.put("jx", "ĵ");
-		REPLACE_LETTERS.put("sx", "ŝ");
-		REPLACE_LETTERS.put("ux", "ŭ");
-		REPLACE_LETTERS.put("ch", "ĉ");
-		REPLACE_LETTERS.put("gh", "ĝ");
-		REPLACE_LETTERS.put("hh", "ĥ");
-		REPLACE_LETTERS.put("jh", "ĵ");
-		REPLACE_LETTERS.put("sh", "ŝ");
-		REPLACE_LETTERS.put("uh", "ŭ");
-		REPLACE_LETTERS.put("au", "aŭ");
-		REPLACE_LETTERS.put("eu", "eŭ");
+	private static String resultsToString(List<VortaroResult> results) {
+		int maxSingleSize = MAX_RESULT_LENGTH / results.size();
+		StringBuilder str = new StringBuilder();
+		results.forEach(result -> str.append(resultToString(result, maxSingleSize)));
+		return str.deleteCharAt(str.length() - 1).toString();
 	}
 
-	private static String formatWord(String reqContent) {
-		String word = reqContent.trim().toLowerCase();
-		for (Map.Entry<String, String> replace : REPLACE_LETTERS.entrySet())
-			word = word.replaceAll(replace.getKey(), replace.getValue());
-		return word;
-	}
-
-	private String query(String vorto) {
-		String result = null;
+	private static String resultToString(VortaroResult result, int maxSize) {
 		try {
-			result = chenVortaro.query(vorto);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		if (result == null)
-			try {
-				result = googleTrans.query(vorto);
-			} catch (Exception e) {
-				e.printStackTrace();
+			StringBuilder str = new StringBuilder();
+			VortaroSource source = result.getSource();
+			str.append("【").append(source.name()).append("】").append("\n");
+			if (source.tip() != null)
+				str.append("（").append(source.tip()).append("）").append("\n");
+
+			int size = str.toString().getBytes("utf-8").length;
+
+			for (VortaroSourceResult sourceResult : result.getResults()) {
+				StringBuilder singleResultStr = new StringBuilder();
+				if (sourceResult.getTitle() != null)
+					singleResultStr.append("◆").append(sourceResult.getTitle()).append("\n");
+				singleResultStr.append(sourceResult.getContent()).append("\n");
+				size += singleResultStr.toString().getBytes("utf-8").length;
+				if (size > maxSize)
+					break;
+				str.append(singleResultStr);
 			}
-		return result;
+			return str.toString();
+		} catch (UnsupportedEncodingException e) {
+			// 不可能
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println(new RequestServlet().query("我的手机"));
+		System.out.println(resultsToString(new Vortaro().query("和")));
 	}
 
 	private void writeResponse(String resContent, Message reqMessage, HttpServletResponse response) throws IOException {

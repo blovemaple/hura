@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura.vortaro;
+package com.github.blovemaple.hura.source;
 
 import java.io.IOException;
 

@@ -1,10 +1,12 @@
-package com.github.blovemaple.hura.vortaro;
+package com.github.blovemaple.hura.source;
 
 import static com.github.blovemaple.hura.util.MyUtils.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,7 +29,7 @@ import org.apache.http.util.EntityUtils;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class GoogleTranslateCracked implements Vortaro {
+public class GoogleTranslateCracked implements VortaroSource {
 
 	private static final String ZH_CN = "zh-CN";
 	private static final String EO = "eo";
@@ -35,7 +37,12 @@ public class GoogleTranslateCracked implements Vortaro {
 	private final Pattern TRANS_TARGET_PATTERN = Pattern.compile("\".*?\"");
 
 	@Override
-	public String query(String vorto) throws IOException {
+	public String name() {
+		return "谷歌翻译";
+	}
+
+	@Override
+	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		try {
 			boolean hasChinese = hasChinese(vorto);
 			String raw = queryRaw(vorto, hasChinese ? ZH_CN : EO, hasChinese ? EO : ZH_CN);
@@ -49,7 +56,7 @@ public class GoogleTranslateCracked implements Vortaro {
 				StringBuilder res = new StringBuilder();
 				res.append(transed);
 				res.append("\n\n——由于没有在词典中查到，此结果来自谷歌翻译，机翻不够精确仅供参考 :)");
-				return res.toString();
+				return Collections.singletonList(new VortaroSourceResult(res.toString()));
 			} else
 				return null;
 		} catch (ParseException | URISyntaxException e) {

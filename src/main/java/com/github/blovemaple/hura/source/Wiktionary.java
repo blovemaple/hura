@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura.vortaro;
+package com.github.blovemaple.hura.source;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -23,9 +24,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import com.github.blovemaple.hura.vortaro.WikiQueryResult.PageData;
-import com.github.blovemaple.hura.vortaro.WikiQueryResult.QueryData;
-import com.github.blovemaple.hura.vortaro.WikiQueryResult.RevisionData;
+import com.github.blovemaple.hura.source.WikiQueryResult.PageData;
+import com.github.blovemaple.hura.source.WikiQueryResult.QueryData;
+import com.github.blovemaple.hura.source.WikiQueryResult.RevisionData;
 import com.google.gson.Gson;
 
 /**
@@ -33,16 +34,21 @@ import com.google.gson.Gson;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class Wiktionary implements Vortaro {
+public class Wiktionary implements VortaroSource {
 
 	private final Gson gson = new Gson();
 
 	@Override
-	public String query(String vorto) throws IOException {
+	public String name() {
+		return "维基词典";
+	}
+
+	@Override
+	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		try {
 			WikiQueryResult queryResult = queryResult(vorto);
 			String pageContent = getPageContent(queryResult, vorto);
-			return parseFromContent(pageContent);
+			return Collections.singletonList(new VortaroSourceResult(parseFromContent(pageContent)));
 		} catch (URISyntaxException e) {
 			// 不可能
 			e.printStackTrace();
@@ -196,8 +202,6 @@ public class Wiktionary implements Vortaro {
 
 		if (resultStr.length() == 0)
 			return null;
-
-		resultStr.append("\n").append("(el la angla Vikivortaro)");
 
 		return resultStr.toString();
 	}

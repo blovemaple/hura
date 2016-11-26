@@ -1,10 +1,12 @@
-package com.github.blovemaple.hura.vortaro;
+package com.github.blovemaple.hura.source;
 
 import static com.github.blovemaple.hura.util.MyUtils.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
@@ -21,7 +23,7 @@ import com.google.gson.Gson;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class GoogleTranslate implements Vortaro {
+public class GoogleTranslate implements VortaroSource {
 	private static final String ZH_CN = "zh-CN";
 	private static final String EO = "eo";
 
@@ -37,20 +39,27 @@ public class GoogleTranslate implements Vortaro {
 	}
 
 	@Override
-	public String query(String vorto) throws IOException {
+	public String name() {
+		return "谷歌翻译";
+	}
+	
+	@Override
+	public String tip() {
+		return "机翻结果，仅供参考";
+	}
+
+	@Override
+	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		try {
 			boolean hasChinese = hasChinese(vorto);
 			String raw = queryRaw(vorto, hasChinese ? ZH_CN : EO, hasChinese ? EO : ZH_CN);
 			GoogleTranslateResult result = gson.fromJson(raw, GoogleTranslateResult.class);
 			String transed = result.getData().getTranslations().get(0).getTranslatedText();
 
-			if (transed.equals(vorto))
+			if (transed.equalsIgnoreCase(vorto))
 				return null;
 
-			StringBuilder res = new StringBuilder();
-			res.append(transed);
-			res.append("\n\n——由于没有在词典中查到，此结果来自谷歌翻译，机翻不够精确仅供参考 :)");
-			return res.toString();
+			return Collections.singletonList(new VortaroSourceResult(transed));
 		} catch (ParseException | URISyntaxException e) {
 			throw new IOException(e);
 		}
