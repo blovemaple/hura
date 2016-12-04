@@ -1,5 +1,7 @@
 package com.github.blovemaple.hura.source;
 
+import static com.github.blovemaple.hura.util.MyUtils.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -38,6 +40,20 @@ public class Wiktionary implements VortaroSource {
 
 	private final Gson gson = new Gson();
 
+	private List<String> validSubtitles;
+	private boolean printSubtitles;
+
+	public Wiktionary() {
+		this(null, true);
+	}
+
+	public Wiktionary(List<String> validSubtitles, boolean printSubtitles) {
+		this.validSubtitles = validSubtitles != null ? validSubtitles
+				: Arrays.asList("Adjective", "Adverb", "Conjunction", "Determiner", "Interjection", "Prefix", "Suffix",
+						"Noun", "Numeral", "Particle", "Phrase", "Preposition", "Pronoun", "Verb", "Etymology");
+		this.printSubtitles = printSubtitles;
+	}
+
 	@Override
 	public String name() {
 		return "维基词典";
@@ -46,9 +62,16 @@ public class Wiktionary implements VortaroSource {
 	@Override
 	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		try {
+			if (hasChinese(vorto)) {
+				return null;
+			}
+
 			WikiQueryResult queryResult = queryResult(vorto);
 			String pageContent = getPageContent(queryResult, vorto);
-			return Collections.singletonList(new VortaroSourceResult(parseFromContent(pageContent)));
+			String finalResult = parseFromContent(pageContent);
+			if (finalResult == null)
+				return null;
+			return Collections.singletonList(new VortaroSourceResult(finalResult));
 		} catch (URISyntaxException e) {
 			// 不可能
 			e.printStackTrace();
@@ -120,9 +143,6 @@ public class Wiktionary implements VortaroSource {
 
 	private static final Pattern TITLE_PATTERN = Pattern.compile("^\\s*==\\s*([^=]+?)\\s*==\\s*$");
 	private static final Pattern SUBTITLE_PATTERN = Pattern.compile("^\\s*=+(.+?)=+\\s*$");
-	private static final List<String> VALID_SUBTITLES = Arrays.asList("Adjective", "Adverb", "Conjunction",
-			"Determiner", "Interjection", "Prefix", "Suffix", "Noun", "Numeral", "Particle", "Phrase", "Preposition",
-			"Pronoun", "Verb", "Etymology");
 
 	private String parseFromContent(String pageContent) throws IOException {
 		if (pageContent == null || pageContent.isEmpty())
@@ -130,6 +150,7 @@ public class Wiktionary implements VortaroSource {
 
 		String parsingStr = pageContent;
 		parsingStr = pageContent.replaceAll("<.+?>", "") // 去掉html标签
+				.replaceAll("(?s)\\{\\|.+?\\|\\}", "") // 去掉{|...|}
 				.replaceAll("\\[\\[(Category:|File:)[^\\[\\]]+?\\]\\]", "") // 去掉分类和文件
 				.replaceAll("\\[\\[[^\\[\\]]+?\\|([^\\[\\]]+?)\\]\\]", "$1") // 把带字面的内部链接替换成字面
 				.replaceAll("\\[\\[([^\\[\\]]+?)\\]\\]", "$1") // 把内部链接去掉方括号
@@ -145,9 +166,11 @@ public class Wiktionary implements VortaroSource {
 		String crtSubtitle = "";
 		boolean isValidTitle = false;
 		boolean isValidSubtitle = false;
+		boolean isSubtitlePrinted = false;
 		int lineIndex = 1;
 		StringBuilder resultStr = new StringBuilder();
 		while ((line = strReader.readLine()) != null) {
+			line = line.trim();
 			if (line.isEmpty())
 				continue;
 
@@ -170,13 +193,11 @@ public class Wiktionary implements VortaroSource {
 			if (subtitleMatcher.find()) {
 				// 是子标题
 				String subtitle = subtitleMatcher.group(1);
-				if (VALID_SUBTITLES.contains(subtitle)) {
+				if (validSubtitles.contains(subtitle)) {
 					crtSubtitle = subtitle;
 					isValidSubtitle = true;
+					isSubtitlePrinted = false;
 					lineIndex = 1;
-					if (resultStr.length() > 0)
-						resultStr.append("\n");
-					resultStr.append("[").append(crtSubtitle).append("]\n");
 				} else {
 					isValidSubtitle = false;
 				}
@@ -185,6 +206,15 @@ public class Wiktionary implements VortaroSource {
 
 			if (!isValidSubtitle)
 				continue;
+
+			if (!isSubtitlePrinted) {
+				if (printSubtitles) {
+					if (resultStr.length() > 0)
+						resultStr.append("\n");
+					resultStr.append("[").append(crtSubtitle).append("]\n");
+				}
+				isSubtitlePrinted = true;
+			}
 
 			switch (crtSubtitle) {
 			case "Etymology":
@@ -201,11 +231,11 @@ public class Wiktionary implements VortaroSource {
 		if (resultStr.length() == 0)
 			return null;
 
-		return resultStr.toString();
+		return resultStr.deleteCharAt(resultStr.length() - 1).toString();
 	}
 
 	public static void main(String[] args) throws IOException {
 		Wiktionary w = new Wiktionary();
-		System.out.println(w.query("tablo"));
+		System.out.println(w.query("viro"));
 	}
 }

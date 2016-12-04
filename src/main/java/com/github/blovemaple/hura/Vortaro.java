@@ -18,6 +18,7 @@ import com.github.blovemaple.hura.source.GoogleTranslate;
 import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
+import com.github.blovemaple.hura.source.WiktionaryEthmology;
 
 /**
  * 整合的词典。
@@ -25,7 +26,8 @@ import com.github.blovemaple.hura.source.VortaroSourceResult;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class Vortaro {
-	private List<VortaroSource> vortaroj = Arrays.asList(new ChenVortaro(), new LernuVortaro());
+	private List<VortaroSource> vortaroj = Arrays.asList(new WiktionaryEthmology(), new ChenVortaro(),
+			new LernuVortaro());
 	private VortaroSource googleTrans = new GoogleTranslate();
 
 	/**
@@ -61,7 +63,6 @@ public class Vortaro {
 				return null;
 			}
 		});
-
 
 		// 等待结果，直到所有词典查询完毕或者到达时限
 		CompletableFuture<Void> allVortarojFuture = CompletableFuture
