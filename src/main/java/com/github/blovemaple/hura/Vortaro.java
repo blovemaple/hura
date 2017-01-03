@@ -1,8 +1,9 @@
 package com.github.blovemaple.hura;
 
+import static com.github.blovemaple.hura.source.VortaroSourceType.*;
+
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,9 +27,12 @@ import com.github.blovemaple.hura.source.WiktionaryEthmology;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class Vortaro {
-	private List<VortaroSource> vortaroj = Arrays.asList(new WiktionaryEthmology(), new ChenVortaro(),
-			new LernuVortaro());
-	private VortaroSource googleTrans = new GoogleTranslate();
+	private List<VortaroSource> sources = Arrays.asList( //
+			new WiktionaryEthmology(), // 附加：维基词典词源
+			new ChenVortaro(), // 词典：陈在伟老师的词典
+			new LernuVortaro(), // 词典：lernu词典
+			new GoogleTranslate() // 机翻：谷歌翻译
+	);
 
 	/**
 	 * @param vorto
@@ -41,73 +45,78 @@ public class Vortaro {
 
 		String formatVorto = formatWord(vorto);
 
-		// 开始查询所有词典、翻译
-		Map<VortaroSource, CompletableFuture<List<VortaroSourceResult>>> vortaroFutures = new LinkedHashMap<>();
-		vortaroj.forEach(vortaro -> {
+		// 开始查询所有来源
+		Map<VortaroSource, CompletableFuture<List<VortaroSourceResult>>> allFutures = new LinkedHashMap<>();
+		sources.forEach(source -> {
 			CompletableFuture<List<VortaroSourceResult>> future = CompletableFuture.supplyAsync(() -> {
 				try {
-					return vortaro.query(formatVorto);
+					return source.query(formatVorto);
 				} catch (IOException e) {
 					e.printStackTrace();
 					return null;
 				}
 			});
-			vortaroFutures.put(vortaro, future);
+			allFutures.put(source, future);
 		});
 
-		CompletableFuture<List<VortaroSourceResult>> googleTransFuture = CompletableFuture.supplyAsync(() -> {
-			try {
-				return googleTrans.query(formatVorto);
-			} catch (IOException e) {
-				e.printStackTrace();
-				return null;
-			}
-		});
-
-		// 等待结果，直到所有词典查询完毕或者到达时限
-		CompletableFuture<Void> allVortarojFuture = CompletableFuture
-				.allOf(vortaroFutures.values().stream().toArray(CompletableFuture[]::new));
+		// 等待结果，直到所有非机翻来源查询完毕或者到达时限
 		try {
-			allVortarojFuture.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			CompletableFuture
+					.allOf(sources.stream().filter(source -> source.type() != TRADUKILO).map(allFutures::get)
+							.toArray(CompletableFuture[]::new))
+					.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			return null;
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 			return null;
 		} catch (TimeoutException e) {
+			// 时限已到
 		}
 
-		// 查询完毕或时限已到，检查词典已有结果
-		List<VortaroResult> vortaroResults = vortaroFutures.entrySet().stream()
-				.map(entry -> new VortaroResult(entry.getKey(), entry.getValue().getNow(null)))
-				.filter(result -> result.getResults() != null && !result.getResults().isEmpty())
-				.collect(Collectors.toList());
-
-		if (!vortaroResults.isEmpty()) {
-			// 有词典有结果，返回词典结果
-			return vortaroResults;
-		} else {
-			// 词典都没有结果，等待并返回翻译结果
-			List<VortaroSourceResult> googleTransResult = null;
+		// 非机翻来源查询完毕或时限已到，检查词典来源有无结果
+		boolean hasVortaroResult = sources.stream().filter(source -> source.type() == VORTARO).map(allFutures::get)
+				.anyMatch(future -> {
+					try {
+						List<VortaroSourceResult> results = future.getNow(null);
+						if (results != null && !results.isEmpty())
+							return true;
+						return false;
+					} catch (Exception e) {
+						return false;
+					}
+				});
+		if (!hasVortaroResult) {
+			// 没有词典结果，等待任何一个翻译结果
 			try {
-				googleTransResult = googleTransFuture.get(startTime + timeout * 1000 - System.currentTimeMillis(),
-						TimeUnit.MILLISECONDS);
+				CompletableFuture
+						.anyOf(sources.stream().filter(source -> source.type() == TRADUKILO).map(allFutures::get)
+								.toArray(CompletableFuture[]::new))
+						.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 			} catch (InterruptedException e) {
 				return null;
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 				return null;
 			} catch (TimeoutException e) {
-				// 翻译超时，返回null
-				return null;
-			}
-			if (googleTransResult != null && !googleTransResult.isEmpty()) {
-				return Collections.singletonList(new VortaroResult(googleTrans, googleTransResult));
-			} else {
-				// 翻译也没有结果，返回null
-				return null;
+				// 时限已到
 			}
 		}
+
+		// 收集并返回结果
+		List<VortaroResult> results = allFutures.entrySet().stream()
+				// 如果有词典结果，则过滤掉机翻结果
+				.filter(entry -> entry.getKey().type() != (hasVortaroResult ? TRADUKILO : VORTARO))
+				// 生成结果
+				.map(entry -> new VortaroResult(entry.getKey(), entry.getValue().getNow(null)))
+				// 过滤掉没结果的来源
+				.filter(result -> result.getResults() != null && !result.getResults().isEmpty())
+				// 收集
+				.collect(Collectors.toList());
+		if (!results.isEmpty())
+			return results;
+		else
+			return null;
 	}
 
 	private static final Map<String, String> REPLACE_LETTERS = new HashMap<>();

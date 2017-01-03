@@ -42,6 +42,11 @@ public class GoogleTranslateCracked implements VortaroSource {
 	}
 
 	@Override
+	public VortaroSourceType type() {
+		return VortaroSourceType.TRADUKILO;
+	}
+
+	@Override
 	public List<VortaroSourceResult> query(String vorto) throws IOException {
 		try {
 			boolean hasChinese = hasChinese(vorto);

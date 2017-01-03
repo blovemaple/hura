@@ -15,6 +15,13 @@ public interface VortaroSource {
 	String name();
 
 	/**
+	 * 返回词典来源类型。默认为词典。
+	 */
+	default VortaroSourceType type() {
+		return VortaroSourceType.VORTARO;
+	}
+
+	/**
 	 * 返回词典来源的注释。
 	 */
 	default String tip() {

@@ -42,7 +42,12 @@ public class GoogleTranslate implements VortaroSource {
 	public String name() {
 		return "谷歌翻译";
 	}
-	
+
+	@Override
+	public VortaroSourceType type() {
+		return VortaroSourceType.TRADUKILO;
+	}
+
 	@Override
 	public String tip() {
 		return "机翻结果，仅供参考";
