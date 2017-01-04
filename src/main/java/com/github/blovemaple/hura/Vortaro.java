@@ -78,7 +78,7 @@ public class Vortaro {
 			waitForResults(allFutures, source -> source.type() == TRADUKILO, startTime, timeout);
 		}
 
-		// 收集并返回结果
+		// 收集结果
 		List<VortaroResult> results = allFutures.values().stream()
 				// 取出有效结果
 				.map(future -> future.getNow(null)).filter(Objects::nonNull)
@@ -86,6 +86,11 @@ public class Vortaro {
 				.filter(result -> result.getSource().type() != (hasVortaroResult ? TRADUKILO : VORTARO))
 				// 收集
 				.collect(Collectors.toList());
+
+		// 停止未结束的查询（XXX CompletableFuture不能中断底层任务，只能把自己置为cancelled状态）
+		allFutures.values().stream().filter(future -> !future.isDone()).forEach(future -> future.cancel(true));
+
+		//返回结果
 		if (!results.isEmpty())
 			return results;
 		else
