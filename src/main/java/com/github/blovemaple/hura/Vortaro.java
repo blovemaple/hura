@@ -1,24 +1,26 @@
 package com.github.blovemaple.hura;
 
 import static com.github.blovemaple.hura.source.VortaroSourceType.*;
+import static java.util.function.Function.*;
+import static java.util.stream.Collectors.*;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.github.blovemaple.hura.source.ChenVortaro;
 import com.github.blovemaple.hura.source.GoogleTranslate;
 import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
-import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.source.WiktionaryEthmology;
 
 /**
@@ -39,78 +41,49 @@ public class Vortaro {
 	 * @param timeout
 	 *            最长查询时间，单位秒
 	 * @return
+	 * @throws InterruptedException
 	 */
-	public List<VortaroResult> query(String vorto, int timeout) {
+	public List<VortaroResult> query(String vorto, int timeout) throws InterruptedException {
 		long startTime = System.currentTimeMillis();
 
 		String formatVorto = formatWord(vorto);
 
 		// 开始查询所有来源
-		Map<VortaroSource, CompletableFuture<List<VortaroSourceResult>>> allFutures = new LinkedHashMap<>();
-		sources.forEach(source -> {
-			CompletableFuture<List<VortaroSourceResult>> future = CompletableFuture.supplyAsync(() -> {
-				try {
-					return source.query(formatVorto);
-				} catch (IOException e) {
-					e.printStackTrace();
-					return null;
-				}
-			});
-			allFutures.put(source, future);
-		});
+		Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures = sources.stream()
+				.collect(toMap(
+						// key是source本身
+						identity(),
+						// value是future
+						source ->
+						// 查询
+						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
+								// 生成VortaroResult
+								.thenApply(results -> VortaroResult.of(source, results)),
+						// 重复source，打印错误信息并取第一个结果
+						(u, v) -> {
+							System.err.println("Duplicated sources exist!");
+							return u;
+						},
+						// 使用LinkedHashMap，以保证按sources的顺序
+						LinkedHashMap::new));
 
-		// 等待结果，直到所有非机翻来源查询完毕或者到达时限
-		try {
-			CompletableFuture
-					.allOf(sources.stream().filter(source -> source.type() != TRADUKILO).map(allFutures::get)
-							.toArray(CompletableFuture[]::new))
-					.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			return null;
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-			return null;
-		} catch (TimeoutException e) {
-			// 时限已到
-		}
+		// 等待所有非机翻来源结果
+		waitForResults(allFutures, source -> source.type() != TRADUKILO, startTime, timeout);
 
-		// 非机翻来源查询完毕或时限已到，检查词典来源有无结果
-		boolean hasVortaroResult = sources.stream().filter(source -> source.type() == VORTARO).map(allFutures::get)
-				.anyMatch(future -> {
-					try {
-						List<VortaroSourceResult> results = future.getNow(null);
-						if (results != null && !results.isEmpty())
-							return true;
-						return false;
-					} catch (Exception e) {
-						return false;
-					}
-				});
+		// 检查有无词典来源的结果
+		boolean hasVortaroResult = allFutures.values().stream().map(future -> future.getNow(null))
+				.filter(Objects::nonNull).anyMatch(result -> result.getSource().type() == VORTARO);
+		// 若没有词典结果，则等待所有机翻结果
 		if (!hasVortaroResult) {
-			// 没有词典结果，等待任何一个翻译结果
-			try {
-				CompletableFuture
-						.anyOf(sources.stream().filter(source -> source.type() == TRADUKILO).map(allFutures::get)
-								.toArray(CompletableFuture[]::new))
-						.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-			} catch (InterruptedException e) {
-				return null;
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-				return null;
-			} catch (TimeoutException e) {
-				// 时限已到
-			}
+			waitForResults(allFutures, source -> source.type() == TRADUKILO, startTime, timeout);
 		}
 
 		// 收集并返回结果
-		List<VortaroResult> results = allFutures.entrySet().stream()
+		List<VortaroResult> results = allFutures.values().stream()
+				// 取出有效结果
+				.map(future -> future.getNow(null)).filter(Objects::nonNull)
 				// 如果有词典结果，则过滤掉机翻结果
-				.filter(entry -> entry.getKey().type() != (hasVortaroResult ? TRADUKILO : VORTARO))
-				// 生成结果
-				.map(entry -> new VortaroResult(entry.getKey(), entry.getValue().getNow(null)))
-				// 过滤掉没结果的来源
-				.filter(result -> result.getResults() != null && !result.getResults().isEmpty())
+				.filter(result -> result.getSource().type() != (hasVortaroResult ? TRADUKILO : VORTARO))
 				// 收集
 				.collect(Collectors.toList());
 		if (!results.isEmpty())
@@ -142,6 +115,24 @@ public class Vortaro {
 		for (Map.Entry<String, String> replace : REPLACE_LETTERS.entrySet())
 			word = word.replaceAll(replace.getKey(), replace.getValue());
 		return word;
+	}
+
+	/**
+	 * 在allFutures中等待指定条件的source的结果，直到结果全部产生或超时。
+	 */
+	private void waitForResults(Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures,
+			Predicate<VortaroSource> sourceFilter, long startTime, int timeout) throws InterruptedException {
+		try {
+			CompletableFuture
+					.allOf(allFutures.entrySet().stream().filter(entry -> sourceFilter.test(entry.getKey()))
+							.map(Map.Entry::getValue).toArray(CompletableFuture[]::new))
+					.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+		} catch (ExecutionException e) {
+			// 已经catch了执行异常，不可能出现
+			e.printStackTrace();
+		} catch (TimeoutException e) {
+			// 时限已到
+		}
 	}
 
 }

@@ -14,6 +14,12 @@ public class VortaroResult {
 	private VortaroSource source;
 	private List<VortaroSourceResult> results;
 
+	public static VortaroResult of(VortaroSource source, List<VortaroSourceResult> results) {
+		if (results == null || results.isEmpty())
+			return null;
+		return new VortaroResult(source, results);
+	}
+
 	public VortaroResult(VortaroSource source, List<VortaroSourceResult> results) {
 		this.source = source;
 		this.results = results;

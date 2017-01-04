@@ -37,4 +37,21 @@ public interface VortaroSource {
 	 * @throws IOException
 	 */
 	List<VortaroSourceResult> query(String vorto) throws IOException;
+
+	/**
+	 * 查询单词解释。出现异常时仅打印不抛出，返回没有结果。
+	 * 
+	 * @param vorto
+	 *            单词
+	 * @return 若干条结果
+	 */
+	default List<VortaroSourceResult> queryWithoutException(String vorto) {
+		try {
+			return query(vorto);
+		} catch (Exception e) {
+			System.err.println("Error query " + vorto + " from " + name());
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

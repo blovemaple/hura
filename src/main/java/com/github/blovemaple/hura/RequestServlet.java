@@ -85,7 +85,7 @@ public class RequestServlet extends HttpServlet {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，我出错了。请等会儿再用吧。 :(", message, response);
+			writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，我暂时出了点问题。请等会儿再来吧。 :(", message, response);
 			return;
 		}
 	}
@@ -143,7 +143,7 @@ public class RequestServlet extends HttpServlet {
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		System.out.println(resultsToString(new Vortaro().query("吃", QUERY_TIMEOUT)));
 	}
 
