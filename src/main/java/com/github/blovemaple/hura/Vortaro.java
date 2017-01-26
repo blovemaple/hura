@@ -2,7 +2,6 @@ package com.github.blovemaple.hura;
 
 import static com.github.blovemaple.hura.source.VortaroSourceType.*;
 import static java.util.function.Function.*;
-import static java.util.stream.Collectors.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,23 +48,29 @@ public class Vortaro {
 		String formatVorto = formatWord(vorto);
 
 		// 开始查询所有来源
-		Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures = sources.stream()
-				.collect(toMap(
-						// key是source本身
-						identity(),
-						// value是future
-						source ->
-						// 查询
-						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
-								// 生成VortaroResult
-								.thenApply(results -> VortaroResult.of(source, results)),
-						// 重复source，打印错误信息并取第一个结果
-						(u, v) -> {
-							System.err.println("Duplicated sources exist!");
-							return u;
-						},
-						// 使用LinkedHashMap，以保证按sources的顺序
-						LinkedHashMap::new));
+		Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures = sources.stream().collect( //
+				Collectors. //
+				// eclipse编译器有问题，只能把toMap的类型参数显式指定才能消除红叉（maven没问题）
+				<VortaroSource, //
+						VortaroSource, //
+						CompletableFuture<VortaroResult>, //
+						LinkedHashMap<VortaroSource, CompletableFuture<VortaroResult>>> //
+						toMap(
+								// key是source本身
+								identity(),
+								// value是future
+								source ->
+								// 查询
+								CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
+										// 生成VortaroResult
+										.thenApply(results -> VortaroResult.of(source, results)),
+								// 重复source，打印错误信息并取第一个结果
+								(u, v) -> {
+									System.err.println("Duplicated sources exist!");
+									return u;
+								},
+								// 使用LinkedHashMap，以保证按sources的顺序
+								LinkedHashMap::new));
 
 		// 等待所有非机翻来源结果
 		waitForResults(allFutures, source -> source.type() != TRADUKILO, startTime, timeout);
@@ -90,7 +95,7 @@ public class Vortaro {
 		// 停止未结束的查询（XXX CompletableFuture不能中断底层任务，只能把自己置为cancelled状态）
 		allFutures.values().stream().filter(future -> !future.isDone()).forEach(future -> future.cancel(true));
 
-		//返回结果
+		// 返回结果
 		if (!results.isEmpty())
 			return results;
 		else
