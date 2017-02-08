@@ -62,7 +62,7 @@ public class LernuVortaro implements VortaroSource {
 	}
 
 	private String queryRaw(String vorto) throws ClientProtocolException, IOException {
-		HttpPost post = new HttpPost("http://lernu.net/eo/vortaro");
+		HttpPost post = new HttpPost("https://lernu.net/eo/vortaro");
 		String dictionary = hasChinese(vorto) ? "zh-cn|eo" : "eo|zh-cn";
 		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("DictWords[dictionary]", dictionary));
