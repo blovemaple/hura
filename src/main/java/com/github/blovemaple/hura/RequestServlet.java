@@ -60,8 +60,9 @@ public class RequestServlet extends HttpServlet {
 			if ("event".equals(message.getMsgType())) {
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse("Bonvenon!\n"
-							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我发送世界语或汉语即可得到解释或翻译。目前Hura的词典来源为陈在伟老师提供的词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
-							+ "目前Hura还不成熟，如有改进建议请直接留言。希望Hura能帮到你。 :)", message, response);
+							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我（Hura公众号）发送世界语或汉语即可得到解释或翻译。目前Hura的词典来源为陈在伟老师提供的世汉词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
+							+ "目前Hura还不成熟，如有改进建议请发送邮件给作者：blovemaple2010@gmail.com。\n"
+							+ "Hura后台服务代码开源，如果你是程序猿/媛朋友，可在Github上搜索“hura”。\n" + "希望Hura能帮到你。 :)", message, response);
 					return;
 				} else
 					noResponse(response);

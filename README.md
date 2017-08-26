@@ -7,3 +7,4 @@ Servo de WeChat abonkonto Hura, servo de Esperanta vortaro.
 <br><br><br>
 TODOs：
 * Hura单词解析（词性、词根、词缀）
+* 优化汉世查询结果
