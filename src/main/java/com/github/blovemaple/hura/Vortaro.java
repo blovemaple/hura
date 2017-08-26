@@ -49,28 +49,22 @@ public class Vortaro {
 
 		// 开始查询所有来源
 		Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures = sources.stream().collect( //
-				Collectors. //
-				// eclipse编译器有问题，只能把toMap的类型参数显式指定才能消除红叉（maven没问题）
-				<VortaroSource, //
-						VortaroSource, //
-						CompletableFuture<VortaroResult>, //
-						LinkedHashMap<VortaroSource, CompletableFuture<VortaroResult>>> //
-						toMap(
-								// key是source本身
-								identity(),
-								// value是future
-								source ->
-								// 查询
-								CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
-										// 生成VortaroResult
-										.thenApply(results -> VortaroResult.of(source, results)),
-								// 重复source，打印错误信息并取第一个结果
-								(u, v) -> {
-									System.err.println("Duplicated sources exist!");
-									return u;
-								},
-								// 使用LinkedHashMap，以保证按sources的顺序
-								LinkedHashMap::new));
+				Collectors.toMap(
+						// keyMapper: key是source本身
+						identity(),
+						// valueMapper: value是future
+						source ->
+						// future第一步: 查询
+						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
+								// future第二步: 生成VortaroResult
+								.thenApply(results -> VortaroResult.of(source, results)),
+						// mergeFunction: 遇到重复source，打印错误信息并取第一个结果
+						(u, v) -> {
+							System.err.println("Duplicated sources exist!");
+							return u;
+						},
+						// mapSupplier: 使用LinkedHashMap，以保证按sources的顺序
+						LinkedHashMap::new));
 
 		// 等待所有非机翻来源结果
 		waitForResults(allFutures, source -> source.type() != TRADUKILO, startTime, timeout);
