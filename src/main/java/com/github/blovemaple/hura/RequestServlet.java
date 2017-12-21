@@ -106,26 +106,30 @@ public class RequestServlet extends HttpServlet {
 						text = ocr.recognize(picUrl);
 					} catch (IOException e) {
 						e.printStackTrace();
-						writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图像识别暂时出了点问题。请先用文字吧。 :(", message,
+						writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图片识别暂时出了点问题。请发文字吧。 :(", message,
 								response);
 						return;
 					}
 					if (text == null || text.isEmpty()) {
-						writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，您的图片里看起来没有文字。请发带文字的图片。 :)", message,
-								response);
+						writeResponse(
+								"Mi bedaŭras, estas ne teksto en ĉi tiu bildo.\n抱歉，我识别不出图片里的文字，或是您的图片里没有文字。请发带世界语或汉语文字的、清晰度尽量高的图片。 :)",
+								message, response);
 						return;
 					}
 
 					long costNow = System.currentTimeMillis() - startTime;
 					List<VortaroResult> vortaroResults = vortaro.query(text, (int) (QUERY_TIMEOUT - costNow));
+					String vortaroResultsString;
 					if (vortaroResults != null && !vortaroResults.isEmpty())
-						writeResponse(resultsToString(vortaroResults), message, response);
+						vortaroResultsString = resultsToString(vortaroResults);
 					else
-						writeResponse("Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂图片里的文字。 :(", message, response);
+						vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂这些文字，无法提供解释或翻译。 :(";
+					writeResponse(wrapOcrTextToResponse(text) + vortaroResultsString + ocrTip(), message, response);
 					return;
 				}
 			default:
-				writeResponse("Mi nur komprenas tekstojn.\n我只认识文字消息哦，给我发文字吧。 :)", message, response);
+//				writeResponse("Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦，给我发文字，或者试试发图片吧。 :)", message, response);
+				writeResponse("Mi nur komprenas tekstojn.\nHura目前只认识文字消息哦，给我发文字吧。（图片文字识别功能即将开启，敬请期待） :)", message, response);
 				return;
 			}
 		} catch (Exception e) {
@@ -134,7 +138,7 @@ public class RequestServlet extends HttpServlet {
 			return;
 		}
 	}
-
+	
 	private Message parseMessage(HttpServletRequest request) throws IOException {
 		request.setCharacterEncoding("UTF-8");
 
@@ -151,6 +155,14 @@ public class RequestServlet extends HttpServlet {
 			return null;
 		}
 		return XmlUtils.fromXml(strWriter.toString(), Message.class);
+	}
+
+	private String wrapOcrTextToResponse(String text) {
+		return "【识别文字】\n" + text + "\n";
+	}
+
+	private String ocrTip() {
+		return "\n\n（图片识别文字准确率较低，请尽量使用清晰度高的图片，并慎重参考识别和翻译结果！）";
 	}
 
 	private static String resultsToString(List<VortaroResult> results) {
