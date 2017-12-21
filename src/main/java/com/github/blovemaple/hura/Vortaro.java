@@ -38,7 +38,7 @@ public class Vortaro {
 	/**
 	 * @param vorto
 	 * @param timeout
-	 *            最长查询时间，单位秒
+	 *            最长查询时间，单位毫秒
 	 * @return
 	 * @throws InterruptedException
 	 */
@@ -130,7 +130,7 @@ public class Vortaro {
 			CompletableFuture
 					.allOf(allFutures.entrySet().stream().filter(entry -> sourceFilter.test(entry.getKey()))
 							.map(Map.Entry::getValue).toArray(CompletableFuture[]::new))
-					.get(startTime + timeout * 1000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+					.get(startTime + timeout - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 		} catch (ExecutionException e) {
 			// 已经catch了执行异常，不可能出现
 			e.printStackTrace();

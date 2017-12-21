@@ -30,6 +30,10 @@ public class Message {
 	private String content;
 
 	@XStreamCDATA
+	@XStreamAlias("PicUrl")
+	private String picUrl;
+
+	@XStreamCDATA
 	@XStreamAlias("Event")
 	private String event;
 
@@ -74,6 +78,14 @@ public class Message {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	public String getPicUrl() {
+		return picUrl;
+	}
+
+	public void setPicUrl(String picUrl) {
+		this.picUrl = picUrl;
 	}
 
 	public String getEvent() {

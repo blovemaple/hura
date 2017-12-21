@@ -13,8 +13,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.blovemaple.hura.ocr.GoogleOcr;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
+import com.github.blovemaple.hura.util.Conf;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
 
 /**
@@ -33,9 +35,19 @@ public class RequestServlet extends HttpServlet {
 	/**
 	 * 查询超时，单位秒
 	 */
-	private static final int QUERY_TIMEOUT = 4;
+	private static final int QUERY_TIMEOUT = 4000;
 
 	private Vortaro vortaro = new Vortaro();
+	private GoogleOcr ocr = new GoogleOcr();
+
+	private String myUserName;
+	{
+		try {
+			myUserName = Conf.str("private", "myusername");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public RequestServlet() {
 		super();
@@ -57,7 +69,8 @@ public class RequestServlet extends HttpServlet {
 		}
 
 		try {
-			if ("event".equals(message.getMsgType())) {
+			switch (message.getMsgType()) {
+			case "event":
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse("Bonvenon!\n"
 							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我（Hura公众号）发送世界语或汉语即可得到解释或翻译。目前Hura的词典来源为陈在伟老师提供的世汉词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
@@ -67,7 +80,7 @@ public class RequestServlet extends HttpServlet {
 				} else
 					noResponse(response);
 				return;
-			} else if ("text".equals(message.getMsgType())) {
+			case "text":
 				String reqContent = message.getContent();
 				if (reqContent == null || reqContent.isEmpty()) {
 					noResponse(response);
@@ -79,11 +92,42 @@ public class RequestServlet extends HttpServlet {
 				else
 					writeResponse("Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂你输入的内容。 :(", message, response);
 				return;
-			} else {
+			case "image":
+				if (myUserName.equals(message.getFromUserName())) {
+					long startTime=System.currentTimeMillis();
+					
+					String picUrl = message.getPicUrl();
+					if (picUrl == null || picUrl.isEmpty()) {
+						noResponse(response);
+						return;
+					}
+					String text;
+					try {
+						text = ocr.recognize(picUrl);
+					} catch (IOException e) {
+						e.printStackTrace();
+						writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图像识别暂时出了点问题。请先用文字吧。 :(", message,
+								response);
+						return;
+					}
+					if (text == null || text.isEmpty()) {
+						writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，您的图片里看起来没有文字。请发带文字的图片。 :)", message,
+								response);
+						return;
+					}
+
+					long costNow = System.currentTimeMillis() - startTime;
+					List<VortaroResult> vortaroResults = vortaro.query(text, (int) (QUERY_TIMEOUT - costNow));
+					if (vortaroResults != null && !vortaroResults.isEmpty())
+						writeResponse(resultsToString(vortaroResults), message, response);
+					else
+						writeResponse("Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂图片里的文字。 :(", message, response);
+					return;
+				}
+			default:
 				writeResponse("Mi nur komprenas tekstojn.\n我只认识文字消息哦，给我发文字吧。 :)", message, response);
 				return;
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			writeResponse("Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，我暂时出了点问题。请等会儿再来吧。 :(", message, response);
