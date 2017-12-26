@@ -1,5 +1,7 @@
 package com.github.blovemaple.hura.ocr;
 
+import static com.github.blovemaple.hura.ocr.OcrResultType.*;
+
 import java.io.IOException;
 
 import org.apache.http.HttpResponse;
@@ -29,8 +31,15 @@ public class GoogleOcr {
 		}
 	}
 
-	public String recognize(String imageUri) throws IOException {
-		return request(GoogleVisionRequest.fromImageUri(imageUri)).getResult();
+	public OcrResult recognize(String imageUri) throws IOException {
+		GoogleVisionResponse response = request(GoogleVisionRequest.fromImageUri(imageUri));
+		String text = response.getTextResult();
+		if (text != null)
+			return new OcrResult(TEXT, text);
+		String label = response.getLabelResult();
+		if (label != null)
+			return new OcrResult(LABEL, label);
+		return null;
 	}
 
 	private GoogleVisionResponse request(GoogleVisionRequest req) throws IOException {

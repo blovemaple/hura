@@ -37,12 +37,13 @@ public class Vortaro {
 
 	/**
 	 * @param vorto
+	 * @param language
 	 * @param timeout
 	 *            最长查询时间，单位毫秒
 	 * @return
 	 * @throws InterruptedException
 	 */
-	public List<VortaroResult> query(String vorto, int timeout) throws InterruptedException {
+	public List<VortaroResult> query(String vorto, Language language, int timeout) throws InterruptedException {
 		long startTime = System.currentTimeMillis();
 
 		String formatVorto = formatWord(vorto);
@@ -55,7 +56,7 @@ public class Vortaro {
 						// valueMapper: value是future
 						source ->
 						// future第一步: 查询
-						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto))
+						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto, language))
 								// future第二步: 生成VortaroResult
 								.thenApply(results -> VortaroResult.of(source, results)),
 						// mergeFunction: 遇到重复source，打印错误信息并取第一个结果

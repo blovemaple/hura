@@ -1,5 +1,6 @@
 package com.github.blovemaple.hura.ocr;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -11,7 +12,7 @@ class GoogleVisionRequest {
 	public static GoogleVisionRequest fromImageUri(String imageUri) {
 		GoogleVisionRequest req = new GoogleVisionRequest();
 		req.setRequests(Collections.singletonList(new Request(new Image(new ImageSource(imageUri)),
-				Collections.singletonList(new Feature("TEXT_DETECTION", 1)))));
+				Arrays.asList(new Feature("TEXT_DETECTION", 1), new Feature("LABEL_DETECTION", 1)))));
 		return req;
 	}
 

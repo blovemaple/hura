@@ -2,6 +2,8 @@
  * Copyright (c) blackbear, Inc All Rights Reserved.
  */
 package com.github.blovemaple.hura.util;
+import static java.util.stream.Collectors.*;
+import java.util.Set;
 
 /**
  * 一些工具。
@@ -30,4 +32,13 @@ public class MyUtils {
 				|| (unicodeBlock == Character.UnicodeBlock.CJK_RADICALS_SUPPLEMENT);
 	}
 
+	private static final Set<Integer> ESPERANTO_CHARS = "abcĉdefgĝhĥijĵklmnopqrsŝtuŭvwxyz".chars().boxed()
+			.collect(toSet());
+
+	/**
+	 * 判断指定字符是否是世界语。
+	 */
+	public static boolean isEsperanto(char c) {
+		return ESPERANTO_CHARS.contains((int) c);
+	}
 }

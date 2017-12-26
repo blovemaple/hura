@@ -19,6 +19,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.pmw.tinylog.Logger;
 
 import com.github.blovemaple.hura.ocr.GoogleOcr;
+import com.github.blovemaple.hura.ocr.OcrResult;
+import com.github.blovemaple.hura.ocr.OcrResultType;
+import com.github.blovemaple.hura.source.GoogleTranslate;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.util.Conf;
@@ -44,6 +47,7 @@ public class RequestServlet extends HttpServlet {
 
 	private Vortaro vortaro = new Vortaro();
 	private GoogleOcr ocr = new GoogleOcr();
+	private GoogleTranslate googleTranslate = new GoogleTranslate();
 
 	private String myUserName;
 	{
@@ -93,7 +97,7 @@ public class RequestServlet extends HttpServlet {
 					noResponse(message, response);
 					return;
 				}
-				List<VortaroResult> results = vortaro.query(reqContent, QUERY_TIMEOUT);
+				List<VortaroResult> results = vortaro.query(reqContent, null, QUERY_TIMEOUT);
 				if (results != null && !results.isEmpty())
 					writeResponse(SUCC, startTime, resultsToString(results), message, response);
 				else
@@ -107,9 +111,9 @@ public class RequestServlet extends HttpServlet {
 						noResponse(message, response);
 						return;
 					}
-					String text;
+					OcrResult ocrResult;
 					try {
-						text = ocr.recognize(picUrl);
+						ocrResult = ocr.recognize(picUrl);
 					} catch (IOException e) {
 						e.printStackTrace();
 						writeResponse(SERR, startTime,
@@ -117,22 +121,39 @@ public class RequestServlet extends HttpServlet {
 								response);
 						return;
 					}
-					if (text == null || text.isEmpty()) {
+					if (ocrResult == null) {
 						writeResponse(FAIL, startTime,
-								"Mi bedaŭras, estas ne teksto en ĉi tiu bildo.\n抱歉，我识别不出图片里的文字，或是您的图片里没有文字。请发带世界语或汉语文字的、清晰度尽量高的图片。 :)",
+								"Mi bedaŭras, mi ne povas rekoni ĉi tiun bildon.\n抱歉，我没能识别这张图片。请发带世界语或汉语文字的，或包含清晰物体的，清晰度尽量高的图片。 :)",
 								message, response);
 						return;
 					}
 
+					String content;
+					switch (ocrResult.getType()) {
+					case LABEL:
+						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
+								GoogleTranslate.EO);
+						if (content == null) {
+							content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
+									GoogleTranslate.ZH_CN);
+						}
+						break;
+					case TEXT:
+						content = ocrResult.getResult().trim();
+						break;
+					default:
+						throw new RuntimeException("Unrecognized OCR result type: " + ocrResult.getType());
+					}
+
 					long costNow = System.currentTimeMillis() - startTime;
-					List<VortaroResult> vortaroResults = vortaro.query(text, (int) (QUERY_TIMEOUT - costNow));
+					List<VortaroResult> vortaroResults = vortaro.query(content, null, (int) (QUERY_TIMEOUT - costNow));
 					String vortaroResultsString;
 					if (vortaroResults != null && !vortaroResults.isEmpty())
 						vortaroResultsString = resultsToString(vortaroResults);
 					else
-						vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂这些文字，无法提供解释或翻译。 :(";
-					writeResponse(SUCC, startTime, wrapOcrTextToResponse(text) + vortaroResultsString + ocrTip(),
-							message, response);
+						vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，Hura无法提供以上内容的解释或翻译。 :(";
+					writeResponse(SUCC, startTime, wrapOcrTextToResponse(content, ocrResult.getType()) + "\n\n"
+							+ vortaroResultsString, message, response);
 					return;
 				}
 			default:
@@ -167,12 +188,15 @@ public class RequestServlet extends HttpServlet {
 		return XmlUtils.fromXml(strWriter.toString(), Message.class);
 	}
 
-	private String wrapOcrTextToResponse(String text) {
-		return "【识别文字】\n" + text + "\n";
-	}
-
-	private String ocrTip() {
-		return "\n\n（图片识别文字准确率较低，请尽量使用清晰度高的图片，并慎重参考识别和翻译结果！）";
+	private String wrapOcrTextToResponse(String content, OcrResultType type) {
+		switch (type) {
+		case LABEL:
+			return "【识别内容】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n图片中看起来没有文字，Hura认为图片的内容是：\n" + content;
+		case TEXT:
+			return "【识别文字】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n" + content;
+		default:
+			throw new RuntimeException("Unrecognized OCR result type: " + type);
+		}
 	}
 
 	private static String resultsToString(List<VortaroResult> results) {
@@ -211,7 +235,7 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-		System.out.println("abc\ndef\r\nghi jkl\tmn".replaceAll("[\\r\\n\\s]", " "));
+		System.out.println("abc\n".trim());
 	}
 
 	private void writeResponse(ResponseStatus status, long startTime, String resContent, Message reqMessage,

@@ -25,6 +25,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.source.ChenQueryResult.ListItem;
 import com.github.blovemaple.hura.util.Conf;
 import com.google.gson.Gson;
@@ -66,7 +67,7 @@ public class ChenVortaro implements VortaroSource {
 	}
 
 	@Override
-	public List<VortaroSourceResult> query(String vorto) throws IOException {
+	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
 		if ("aaaaa".equals(vorto)) {
 			// 方便调试
 			return Collections.singletonList(
@@ -81,7 +82,8 @@ public class ChenVortaro implements VortaroSource {
 				// 查询无结果
 				return null;
 
-			if (hasChinese(vorto)) {
+			switch (language) {
+			case CHINESE:
 				// 输入是中文
 				List<ListItem> finalItems;
 
@@ -107,7 +109,8 @@ public class ChenVortaro implements VortaroSource {
 				return finalItems.stream() //
 						.map(item -> new VortaroSourceResult(item.getRadiko(), item.getSignifo()))
 						.collect(Collectors.toList());
-			} else {
+
+			case ESPERANTO:
 				// 输入是世界语
 				// 只取完全匹配的单词的释义
 				List<String> results = queryResult.getList().stream()
@@ -119,6 +122,9 @@ public class ChenVortaro implements VortaroSource {
 					return Collections.singletonList(new VortaroSourceResult(results.get(0)));
 				else
 					return results.stream().map(VortaroSourceResult::new).collect(Collectors.toList());
+
+			default:
+				return null;
 			}
 		} catch (URISyntaxException e) {
 			// 不可能
