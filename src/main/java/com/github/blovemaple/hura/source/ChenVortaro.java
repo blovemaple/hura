@@ -5,8 +5,6 @@ import static com.github.blovemaple.hura.util.MyUtils.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -68,11 +66,6 @@ public class ChenVortaro implements VortaroSource {
 
 	@Override
 	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
-		if ("aaaaa".equals(vorto)) {
-			// 方便调试
-			return Collections.singletonList(
-					new VortaroSourceResult(String.join("\n", Files.readAllLines(Paths.get("/home/blove/tmp/test")))));
-		}
 		try {
 			ChenQueryResult queryResult = queryResult(vorto);
 			if (queryResult.getStatus() == 0)
