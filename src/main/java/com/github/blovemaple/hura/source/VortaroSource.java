@@ -3,6 +3,8 @@ package com.github.blovemaple.hura.source;
 import java.io.IOException;
 import java.util.List;
 
+import com.github.blovemaple.hura.Language;
+
 /**
  * 词典来源接口。
  * 
@@ -36,18 +38,28 @@ public interface VortaroSource {
 	 * @return 若干条结果
 	 * @throws IOException
 	 */
-	List<VortaroSourceResult> query(String vorto) throws IOException;
-
+	default List<VortaroSourceResult> query(String vorto) throws IOException {
+		return query(vorto, Language.determine(vorto));
+	}
+	
 	/**
-	 * 查询单词解释。出现异常时仅打印不抛出，返回没有结果。
+	 * 查询单词解释（指定语言）。
 	 * 
 	 * @param vorto
 	 *            单词
+	 * @param language
+	 *            语言
 	 * @return 若干条结果
+	 * @throws IOException
 	 */
-	default List<VortaroSourceResult> queryWithoutException(String vorto) {
+	List<VortaroSourceResult> query(String vorto, Language language) throws IOException;
+
+	/**
+	 * 查询单词解释。出现异常时仅打印不抛出，返回没有结果。
+	 */
+	default List<VortaroSourceResult> queryWithoutException(String vorto, Language language) {
 		try {
-			return query(vorto);
+			return language == null ? query(vorto) : query(vorto, language);
 		} catch (Exception e) {
 			System.err.println("Error query " + vorto + " from " + name());
 			e.printStackTrace();

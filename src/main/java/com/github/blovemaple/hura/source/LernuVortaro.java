@@ -1,7 +1,5 @@
 package com.github.blovemaple.hura.source;
 
-import static com.github.blovemaple.hura.util.MyUtils.*;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +17,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import com.github.blovemaple.hura.Language;
+
 /**
  * lernu词典。
  * 
@@ -32,10 +32,22 @@ public class LernuVortaro implements VortaroSource {
 	}
 
 	@Override
-	public List<VortaroSourceResult> query(String vorto) throws IOException {
+	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
 		List<VortaroSourceResult> result = new ArrayList<>();
 
-		Document doc = Jsoup.parse(queryRaw(vorto));
+		String dictionary;
+		switch(language) {
+		case CHINESE:
+			dictionary="zh-cn|eo";
+			break;
+		case ESPERANTO:
+			dictionary="eo|zh-cn";
+			break;
+		default:
+			return null;
+		}
+		
+		Document doc = Jsoup.parse(queryRaw(vorto, dictionary));
 		for (Element item : doc.select("ul.dictionary-items").first().children()) {
 			if (item.hasClass("empty"))
 				return null;
@@ -61,9 +73,8 @@ public class LernuVortaro implements VortaroSource {
 		return result;
 	}
 
-	private String queryRaw(String vorto) throws ClientProtocolException, IOException {
+	private String queryRaw(String vorto, String dictionary) throws ClientProtocolException, IOException {
 		HttpPost post = new HttpPost("https://lernu.net/eo/vortaro");
-		String dictionary = hasChinese(vorto) ? "zh-cn|eo" : "eo|zh-cn";
 		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("DictWords[dictionary]", dictionary));
 		nameValuePairs.add(new BasicNameValuePair("DictWords[word]", vorto));

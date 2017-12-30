@@ -1,7 +1,5 @@
 package com.github.blovemaple.hura.source;
 
-import static com.github.blovemaple.hura.util.MyUtils.*;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -21,6 +19,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+
+import com.github.blovemaple.hura.Language;
 
 /**
  * 谷歌翻译（模拟网页请求）。
@@ -47,10 +47,22 @@ public class GoogleTranslateCracked implements VortaroSource {
 	}
 
 	@Override
-	public List<VortaroSourceResult> query(String vorto) throws IOException {
+	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
 		try {
-			boolean hasChinese = hasChinese(vorto);
-			String raw = queryRaw(vorto, hasChinese ? ZH_CN : EO, hasChinese ? EO : ZH_CN);
+			String fromLang, toLang;
+			switch (language) {
+			case CHINESE:
+				fromLang = ZH_CN;
+				toLang = EO;
+				break;
+			case ESPERANTO:
+				fromLang = EO;
+				toLang = ZH_CN;
+				break;
+			default:
+				return null;
+			}
+			String raw = queryRaw(vorto, fromLang, toLang);
 			Matcher matcher = TRANS_TARGET_PATTERN.matcher(raw);
 			if (matcher.find()) {
 				String matched = matcher.group();

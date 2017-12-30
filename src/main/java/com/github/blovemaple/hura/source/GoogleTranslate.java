@@ -1,7 +1,5 @@
 package com.github.blovemaple.hura.source;
 
-import static com.github.blovemaple.hura.util.MyUtils.*;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -15,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.util.Conf;
 import com.google.gson.Gson;
 
@@ -24,8 +23,9 @@ import com.google.gson.Gson;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class GoogleTranslate implements VortaroSource {
-	private static final String ZH_CN = "zh-CN";
-	private static final String EO = "eo";
+	public static final String ZH_CN = "zh-CN";
+	public static final String EO = "eo";
+	public static final String EN = "en";
 
 	private final Gson gson = new Gson();
 
@@ -50,21 +50,38 @@ public class GoogleTranslate implements VortaroSource {
 
 	@Override
 	public String tip() {
-		return "机翻结果，仅供参考";
+		return "机翻结果，仅供参考。输入单个单词可查询词典解释。";
 	}
 
 	@Override
-	public List<VortaroSourceResult> query(String vorto) throws IOException {
+	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
+		String fromLang, toLang;
+		switch (language) {
+		case CHINESE:
+			fromLang = ZH_CN;
+			toLang = EO;
+			break;
+		case ESPERANTO:
+			fromLang = EO;
+			toLang = ZH_CN;
+			break;
+		default:
+			return null;
+		}
+		String transed = translate(vorto, fromLang, toLang);
+		return transed == null ? null : Collections.singletonList(new VortaroSourceResult(transed));
+	}
+
+	public String translate(String str, String fromLang, String toLang) throws IOException {
 		try {
-			boolean hasChinese = hasChinese(vorto);
-			String raw = queryRaw(vorto, hasChinese ? ZH_CN : EO, hasChinese ? EO : ZH_CN);
+			String raw = queryRaw(str, fromLang, toLang);
 			GoogleTranslateResult result = gson.fromJson(raw, GoogleTranslateResult.class);
 			String transed = result.getData().getTranslations().get(0).getTranslatedText();
 
-			if (transed.equalsIgnoreCase(vorto))
+			if (transed.equalsIgnoreCase(str))
 				return null;
 
-			return Collections.singletonList(new VortaroSourceResult(transed));
+			return transed;
 		} catch (ParseException | URISyntaxException e) {
 			throw new IOException(e);
 		}
