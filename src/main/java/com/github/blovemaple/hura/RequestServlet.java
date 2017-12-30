@@ -49,6 +49,7 @@ public class RequestServlet extends HttpServlet {
 	private GoogleOcr ocr = new GoogleOcr();
 	private GoogleTranslate googleTranslate = new GoogleTranslate();
 
+	@SuppressWarnings("unused")
 	private String myUserName;
 	{
 		try {
@@ -57,6 +58,11 @@ public class RequestServlet extends HttpServlet {
 			e.printStackTrace();
 		}
 	}
+
+	/**
+	 * 微信请求中偶尔会以text类型发来这个消息（至少发送动图表情的时候是这样）
+	 */
+	private static final String UNSUPPORTED_MESSAGE_CONTENT = "【收到不支持的消息类型，暂无法显示】";
 
 	public RequestServlet() {
 		super();
@@ -84,7 +90,7 @@ public class RequestServlet extends HttpServlet {
 			case "event":
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse(SUCC, startTime, "Bonvenon!\n"
-							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我（Hura公众号）发送世界语或汉语即可得到解释或翻译。目前Hura的词典来源为陈在伟老师提供的世汉词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
+							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我（Hura公众号）以文字或图片消息发送世界语或汉语即可得到词典解释或翻译。目前Hura的词典来源为陈在伟老师提供的世汉词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
 							+ "目前Hura还不成熟，如有改进建议请发送邮件给作者：blovemaple2010@gmail.com。\n"
 							+ "Hura后台服务代码开源，如果你是程序猿/媛朋友，可在Github上搜索“hura”。\n" + "希望Hura能帮到你。 :)", message, response);
 					return;
@@ -97,6 +103,11 @@ public class RequestServlet extends HttpServlet {
 					noResponse(message, response);
 					return;
 				}
+
+				if (UNSUPPORTED_MESSAGE_CONTENT.equals(reqContent)) {
+					writeResponse(NOSU, startTime, "抱歉，您发送的消息微信暂不支持。请发送文字或静态图片消息。 :)", message, response);
+				}
+
 				List<VortaroResult> results = vortaro.query(reqContent, null, QUERY_TIMEOUT);
 				if (results != null && !results.isEmpty())
 					writeResponse(SUCC, startTime, resultsToString(results), message, response);
@@ -105,62 +116,58 @@ public class RequestServlet extends HttpServlet {
 							response);
 				return;
 			case "image":
-				if (myUserName.equals(message.getFromUserName())) {
-					String picUrl = message.getPicUrl();
-					if (picUrl == null || picUrl.isEmpty()) {
-						noResponse(message, response);
-						return;
-					}
-					OcrResult ocrResult;
-					try {
-						ocrResult = ocr.recognize(picUrl);
-					} catch (IOException e) {
-						e.printStackTrace();
-						writeResponse(SERR, startTime,
-								"Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图片识别暂时出了点问题。请发文字吧。 :(", message,
-								response);
-						return;
-					}
-					if (ocrResult == null) {
-						writeResponse(FAIL, startTime,
-								"Mi bedaŭras, mi ne povas rekoni ĉi tiun bildon.\n抱歉，我没能识别这张图片。请发带世界语或汉语文字的，或包含清晰物体的，清晰度尽量高的图片。 :)",
-								message, response);
-						return;
-					}
-
-					String content;
-					switch (ocrResult.getType()) {
-					case LABEL:
-						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
-								GoogleTranslate.EO);
-						if (content == null) {
-							content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
-									GoogleTranslate.ZH_CN);
-						}
-						break;
-					case TEXT:
-						content = ocrResult.getResult().trim();
-						break;
-					default:
-						throw new RuntimeException("Unrecognized OCR result type: " + ocrResult.getType());
-					}
-
-					long costNow = System.currentTimeMillis() - startTime;
-					List<VortaroResult> vortaroResults = vortaro.query(content, null, (int) (QUERY_TIMEOUT - costNow));
-					String vortaroResultsString;
-					if (vortaroResults != null && !vortaroResults.isEmpty())
-						vortaroResultsString = resultsToString(vortaroResults);
-					else
-						vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，Hura无法提供以上内容的解释或翻译。 :(";
-					writeResponse(SUCC, startTime, wrapOcrTextToResponse(content, ocrResult.getType()) + "\n\n"
-							+ vortaroResultsString, message, response);
+				String picUrl = message.getPicUrl();
+				if (picUrl == null || picUrl.isEmpty()) {
+					noResponse(message, response);
 					return;
 				}
+				OcrResult ocrResult;
+				try {
+					ocrResult = ocr.recognize(picUrl);
+				} catch (IOException e) {
+					e.printStackTrace();
+					writeResponse(SERR, startTime, "Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图片识别暂时出了点问题。请发文字吧。 :(",
+							message, response);
+					return;
+				}
+				if (ocrResult == null) {
+					writeResponse(FAIL, startTime,
+							"Mi bedaŭras, mi ne povas rekoni ĉi tiun bildon.\n抱歉，我没能识别这张图片。请发带世界语或汉语文字的，或包含清晰物体的，清晰度尽量高的图片。 :)",
+							message, response);
+					return;
+				}
+
+				String content;
+				switch (ocrResult.getType()) {
+				case LABEL:
+					content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN, GoogleTranslate.EO);
+					if (content == null) {
+						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
+								GoogleTranslate.ZH_CN);
+					}
+					break;
+				case TEXT:
+					content = ocrResult.getResult().trim();
+					break;
+				default:
+					throw new RuntimeException("Unrecognized OCR result type: " + ocrResult.getType());
+				}
+
+				long costNow = System.currentTimeMillis() - startTime;
+				List<VortaroResult> vortaroResults = vortaro.query(content, null, (int) (QUERY_TIMEOUT - costNow));
+				String vortaroResultsString;
+				if (vortaroResults != null && !vortaroResults.isEmpty())
+					vortaroResultsString = resultsToString(vortaroResults);
+				else
+					vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，Hura无法提供以上内容的解释或翻译。 :(";
+				writeResponse(SUCC, startTime,
+						wrapOcrTextToResponse(content, ocrResult.getType()) + "\n\n" + vortaroResultsString, message,
+						response);
+				return;
 			default:
-				// writeResponse("Mi nur komprenas tekstojn kaj
-				// bildojn.\nHura目前只认识文字和图片消息哦，给我发文字，或者试试发图片吧。 :)", message, response);
 				writeResponse(NOSU, startTime,
-						"Mi nur komprenas tekstojn.\nHura目前只认识文字消息哦，给我发文字吧。（图片文字识别功能即将开启，敬请期待） :)", message, response);
+						"Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦。 :)", message,
+						response);
 				return;
 			}
 		} catch (Exception e) {
