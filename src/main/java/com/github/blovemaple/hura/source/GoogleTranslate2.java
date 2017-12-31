@@ -1,27 +1,27 @@
 package com.github.blovemaple.hura.source;
 
+import static java.util.stream.Collectors.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 
 import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.util.Conf;
-import com.google.gson.Gson;
+import com.google.cloud.translate.Translate;
+import com.google.cloud.translate.Translate.TranslateOption;
+import com.google.cloud.translate.TranslateOptions;
+import com.google.cloud.translate.Translation;
 
 /**
- * 谷歌翻译（用Google API，post接口分行批量请求）。
+ * 谷歌翻译（用Google API java client，post接口分行批量请求）。
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
@@ -30,8 +30,7 @@ public class GoogleTranslate2 implements VortaroSource {
 	public static final String EO = "eo";
 	public static final String EN = "en";
 
-	private final Gson gson = new Gson();
-
+	Translate translate = TranslateOptions.getDefaultInstance().getService();
 	private String key;
 	{
 		try {
@@ -39,6 +38,7 @@ public class GoogleTranslate2 implements VortaroSource {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.setProperty("GOOGLE_API_KEY", key);
 	}
 
 	@Override
@@ -76,38 +76,30 @@ public class GoogleTranslate2 implements VortaroSource {
 	}
 
 	public String translate(String str, String fromLang, String toLang) throws IOException {
-
-		StringBuilder reqJson = new StringBuilder("{'source':'" + fromLang + "','target':'" + toLang + "'");
-		boolean isEmptyQ = true;
+		List<String> texts = new ArrayList<>();
 		try (BufferedReader lineReader = new BufferedReader(new StringReader(str))) {
 			String line;
 			while ((line = lineReader.readLine()) != null) {
 				if (StringUtils.isBlank(line))
 					continue;
-				reqJson.append(",'q':'" + line + "'");
-				isEmptyQ = false;
+				texts.add(line.trim());
 			}
 		}
-		if (isEmptyQ)
+		if (texts.isEmpty())
 			return null;
-		reqJson.append("}");
 
-		HttpPost post = new HttpPost("https://translation.googleapis.com/language/translate/v2?key=" + key);
-		post.setEntity(new StringEntity(reqJson.toString()));
-//		 post.setConfig(RequestConfig.custom().setProxy(new HttpHost("127.0.0.1",
-//		 1080)).build());
-		HttpClient http = HttpClients.createSystem();
-		HttpResponse response = http.execute(post);
-		String responseStr = EntityUtils.toString(response.getEntity());
+		List<Translation> translations = translate.translate(texts, TranslateOption.sourceLanguage(fromLang),
+				TranslateOption.targetLanguage(toLang));
+		if (translations.isEmpty())
+			return null;
+		List<String> results = translations.stream().map(Translation::getTranslatedText).collect(toList());
 
-		GoogleTranslation2Response res = gson.fromJson(responseStr, GoogleTranslation2Response.class);
-		List<String> results = res == null ? null : res.getResults();
-		return results == null ? null : String.join("\n", results);
+		return String.join("\n", results);
 	}
 
 	public static void main(String[] args) throws ParseException, IOException, URISyntaxException {
 		GoogleTranslate2 t = new GoogleTranslate2();
-		System.out.println(t.query("mi estas\r\nhomo."));
+		System.out.println(t.query("mi\nestas esperantisto.", Language.ESPERANTO));
 	}
 
 }
