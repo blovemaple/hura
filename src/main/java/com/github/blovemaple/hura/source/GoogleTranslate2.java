@@ -8,11 +8,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
@@ -96,8 +94,8 @@ public class GoogleTranslate2 implements VortaroSource {
 
 		HttpPost post = new HttpPost("https://translation.googleapis.com/language/translate/v2?key=" + key);
 		post.setEntity(new StringEntity(reqJson.toString()));
-		 post.setConfig(RequestConfig.custom().setProxy(new HttpHost("127.0.0.1",
-		 1080)).build());
+//		 post.setConfig(RequestConfig.custom().setProxy(new HttpHost("127.0.0.1",
+//		 1080)).build());
 		HttpClient http = HttpClients.createSystem();
 		HttpResponse response = http.execute(post);
 		String responseStr = EntityUtils.toString(response.getEntity());
