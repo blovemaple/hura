@@ -21,7 +21,7 @@ import org.pmw.tinylog.Logger;
 import com.github.blovemaple.hura.ocr.GoogleOcr;
 import com.github.blovemaple.hura.ocr.OcrResult;
 import com.github.blovemaple.hura.ocr.OcrResultType;
-import com.github.blovemaple.hura.source.GoogleTranslate;
+import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.util.Conf;
@@ -47,7 +47,7 @@ public class RequestServlet extends HttpServlet {
 
 	private Vortaro vortaro = new Vortaro();
 	private GoogleOcr ocr = new GoogleOcr();
-	private GoogleTranslate googleTranslate = new GoogleTranslate();
+	private GoogleTranslate2 googleTranslate = new GoogleTranslate2();
 
 	@SuppressWarnings("unused")
 	private String myUserName;
@@ -140,10 +140,11 @@ public class RequestServlet extends HttpServlet {
 				String content;
 				switch (ocrResult.getType()) {
 				case LABEL:
-					content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN, GoogleTranslate.EO);
+					content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
+							GoogleTranslate2.EO);
 					if (content == null) {
-						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate.EN,
-								GoogleTranslate.ZH_CN);
+						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
+								GoogleTranslate2.ZH_CN);
 					}
 					break;
 				case TEXT:

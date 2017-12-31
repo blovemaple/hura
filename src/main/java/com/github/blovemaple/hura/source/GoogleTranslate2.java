@@ -1,15 +1,20 @@
 package com.github.blovemaple.hura.source;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
@@ -18,12 +23,11 @@ import com.github.blovemaple.hura.util.Conf;
 import com.google.gson.Gson;
 
 /**
- * 谷歌翻译（用Google API）。
+ * 谷歌翻译（用Google API，post接口分行批量请求）。
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-@Deprecated
-public class GoogleTranslate implements VortaroSource {
+public class GoogleTranslate2 implements VortaroSource {
 	public static final String ZH_CN = "zh-CN";
 	public static final String EO = "eo";
 	public static final String EN = "en";
@@ -74,33 +78,38 @@ public class GoogleTranslate implements VortaroSource {
 	}
 
 	public String translate(String str, String fromLang, String toLang) throws IOException {
-		try {
-			String raw = queryRaw(str, fromLang, toLang);
-			GoogleTranslateResult result = gson.fromJson(raw, GoogleTranslateResult.class);
-			String transed = result.getData().getTranslations().get(0).getTranslatedText();
 
-			if (transed.equalsIgnoreCase(str))
-				return null;
-
-			return transed;
-		} catch (ParseException | URISyntaxException e) {
-			throw new IOException(e);
+		StringBuilder reqJson = new StringBuilder("{'source':'" + fromLang + "','target':'" + toLang + "'");
+		boolean isEmptyQ = true;
+		try (BufferedReader lineReader = new BufferedReader(new StringReader(str))) {
+			String line;
+			while ((line = lineReader.readLine()) != null) {
+				if (StringUtils.isBlank(line))
+					continue;
+				reqJson.append(",'q':'" + line + "'");
+				isEmptyQ = false;
+			}
 		}
-	}
+		if (isEmptyQ)
+			return null;
+		reqJson.append("}");
 
-	private String queryRaw(String vorto, String fromLang, String toLang)
-			throws ParseException, IOException, URISyntaxException {
-		HttpGet get = new HttpGet("https://www.googleapis.com/language/translate/v2?source=" + fromLang + "&target="
-				+ toLang + "&key=" + key + "&q=" + URLEncoder.encode(vorto, "UTF-8"));
+		HttpPost post = new HttpPost("https://translation.googleapis.com/language/translate/v2?key=" + key);
+		post.setEntity(new StringEntity(reqJson.toString()));
+		 post.setConfig(RequestConfig.custom().setProxy(new HttpHost("127.0.0.1",
+		 1080)).build());
 		HttpClient http = HttpClients.createSystem();
-		HttpResponse response = http.execute(get);
+		HttpResponse response = http.execute(post);
 		String responseStr = EntityUtils.toString(response.getEntity());
-		return responseStr;
+
+		GoogleTranslation2Response res = gson.fromJson(responseStr, GoogleTranslation2Response.class);
+		List<String> results = res == null ? null : res.getResults();
+		return results == null ? null : String.join("\n", results);
 	}
 
 	public static void main(String[] args) throws ParseException, IOException, URISyntaxException {
-		GoogleTranslate t = new GoogleTranslate();
-		System.out.println(t.query("Mi ne estas."));
+		GoogleTranslate2 t = new GoogleTranslate2();
+		System.out.println(t.query("mi estas\r\nhomo."));
 	}
 
 }

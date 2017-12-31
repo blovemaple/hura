@@ -17,7 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.github.blovemaple.hura.source.ChenVortaro;
-import com.github.blovemaple.hura.source.GoogleTranslate;
+import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.WiktionaryEthmology;
@@ -32,7 +32,7 @@ public class Vortaro {
 			new WiktionaryEthmology(), // 附加：维基词典词源
 			new ChenVortaro(), // 词典：陈在伟老师的词典
 			new LernuVortaro(), // 词典：lernu词典
-			new GoogleTranslate() // 机翻：谷歌翻译
+			new GoogleTranslate2() // 机翻：谷歌翻译
 	);
 
 	/**
