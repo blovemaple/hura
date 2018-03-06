@@ -31,14 +31,13 @@ public class GoogleTranslate2 implements VortaroSource {
 	public static final String EN = "en";
 
 	Translate translate = TranslateOptions.getDefaultInstance().getService();
-	private String key;
 	{
 		try {
-			key = Conf.str("private", "googleapi.key");
+			String crecentials = Conf.str("private", "google.application.credentials");
+			System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", crecentials);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.setProperty("GOOGLE_API_KEY", key);
 	}
 
 	@Override
