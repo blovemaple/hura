@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.apache.http.ParseException;
 
 import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.util.Conf;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.Translate.TranslateOption;
 import com.google.cloud.translate.TranslateOptions;
@@ -30,13 +32,15 @@ public class GoogleTranslate2 implements VortaroSource {
 	public static final String EO = "eo";
 	public static final String EN = "en";
 
-	Translate translate = TranslateOptions.getDefaultInstance().getService();
-	{
-		try {
-			String crecentials = Conf.str("private", "google.application.credentials");
-			System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", crecentials);
+	private Translate translate;
+
+	public GoogleTranslate2() {
+		try (InputStream fileIn = this.getClass()
+				.getResourceAsStream(Conf.str("private", "google.application.credentials"))) {
+			translate = TranslateOptions.newBuilder().setCredentials(GoogleCredentials.fromStream(fileIn)).build()
+					.getService();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 
