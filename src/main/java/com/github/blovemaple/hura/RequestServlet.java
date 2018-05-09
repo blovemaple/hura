@@ -1,14 +1,17 @@
 package com.github.blovemaple.hura;
 
 import static com.github.blovemaple.hura.ResponseStatus.*;
+import static java.util.stream.Collectors.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -26,6 +29,7 @@ import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.util.Conf;
 import com.github.blovemaple.hura.xmlutil.XmlUtils;
+import com.google.common.hash.Hashing;
 
 /**
  * 处理微信请求的servlet。
@@ -41,7 +45,7 @@ public class RequestServlet extends HttpServlet {
 	 */
 	private static final int MAX_RESULT_LENGTH = 2047;
 	/**
-	 * 查询超时，单位秒
+	 * 查询超时，单位毫秒
 	 */
 	private static final int QUERY_TIMEOUT = 4000;
 
@@ -59,6 +63,15 @@ public class RequestServlet extends HttpServlet {
 		}
 	}
 
+	private String wechatToken;
+	{
+		try {
+			wechatToken = Conf.str("private", "wechat.token");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * 微信请求中偶尔会以text类型发来这个消息（至少发送动图表情的时候是这样）
 	 */
@@ -70,6 +83,9 @@ public class RequestServlet extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		if (echostr(request, response))
+			return;
+
 		Message message;
 		try {
 			message = parseMessage(request);
@@ -82,6 +98,9 @@ public class RequestServlet extends HttpServlet {
 			noResponse(null, response);
 			return;
 		}
+
+		if (!checkValid(request, response, message))
+			return;
 
 		long startTime = System.currentTimeMillis();
 
@@ -179,6 +198,41 @@ public class RequestServlet extends HttpServlet {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
+	private boolean checkValid(HttpServletRequest request, HttpServletResponse response, Message message) {
+		if (message != null && "0".equals(message.getFromUserName()))
+			// 用于调试
+			return true;
+
+		String timestamp = request.getParameter("timestamp");
+		String nonce = request.getParameter("nonce");
+		String signature = request.getParameter("signature");
+		if (timestamp == null || nonce == null || signature == null)
+			return false;
+
+		List<String> params = Stream.of(wechatToken, timestamp, nonce).sorted().collect(toList());
+		String param = String.join("", params);
+		String trueSignature = Hashing.sha1().hashString(param, Charset.forName("UTF-8")).toString();
+		if (trueSignature.equals(signature))
+			return true;
+		else {
+			illegalResponse(message, response);
+			return false;
+		}
+	}
+
+	private boolean echostr(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		String echostr = request.getParameter("echostr");
+		if (echostr != null && checkValid(request, response, null)) {
+			PrintWriter writer = response.getWriter();
+			writer.print(echostr);
+			writer.flush();
+			log(TOKN, null, null, null);
+			return true;
+		}
+		return false;
+	}
+
 	private Message parseMessage(HttpServletRequest request) throws IOException {
 		request.setCharacterEncoding("UTF-8");
 
@@ -242,10 +296,6 @@ public class RequestServlet extends HttpServlet {
 		}
 	}
 
-	public static void main(String[] args) throws IOException, InterruptedException {
-		System.out.println("abc\n".trim());
-	}
-
 	private void writeResponse(ResponseStatus status, long startTime, String resContent, Message reqMessage,
 			HttpServletResponse response) throws IOException {
 		Message resMessage = new Message();
@@ -266,6 +316,10 @@ public class RequestServlet extends HttpServlet {
 
 	private void noResponse(Message reqMessage, HttpServletResponse response) {
 		log(NULL, null, reqMessage, null);
+	}
+
+	private void illegalResponse(Message reqMessage, HttpServletResponse response) {
+		log(ILGL, null, null, null);
 	}
 
 	private void log(ResponseStatus status, Long startTime, Message reqMessage, String resContent) {
