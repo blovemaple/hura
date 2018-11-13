@@ -75,7 +75,8 @@ public class GoogleTranslate2 implements VortaroSource {
 			return null;
 		}
 		String transed = translate(vorto, fromLang, toLang);
-		return transed == null ? null : Collections.singletonList(new VortaroSourceResult(transed));
+		return transed == null || transed.equals(vorto) ? null
+				: Collections.singletonList(new VortaroSourceResult(transed));
 	}
 
 	public String translate(String str, String fromLang, String toLang) throws IOException {
