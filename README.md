@@ -6,6 +6,5 @@ Servo de WeChat abonkonto Hura, servo de Esperanta vortaro.
 
 <br><br><br>
 TODOs：
-* 识别和还原单词原形，按照原形查询获得准确结果
 * 支持英-世查询和翻译
-* 单词解析（词性、词根、词缀）
+* 拆分复合词

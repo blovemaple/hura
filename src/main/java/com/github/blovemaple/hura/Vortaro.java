@@ -1,9 +1,10 @@
 package com.github.blovemaple.hura;
 
-import static com.github.blovemaple.hura.source.VortaroSourceType.*;
-import static java.util.function.Function.*;
+import static java.util.stream.Collectors.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,13 +15,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.github.blovemaple.hura.source.ChenVortaro;
 import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.WiktionaryEthmology;
+import com.github.blovemaple.hura.vorto.Lemmatization;
 
 /**
  * 整合的词典。
@@ -28,18 +29,16 @@ import com.github.blovemaple.hura.source.WiktionaryEthmology;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class Vortaro {
-	private List<VortaroSource> sources = Arrays.asList( //
-			new WiktionaryEthmology(), // 附加：维基词典词源
-			new ChenVortaro(), // 词典：陈在伟老师的词典
-			new LernuVortaro(), // 词典：lernu词典
-			new GoogleTranslate2() // 机翻：谷歌翻译
-	);
+	private VortaroSource ethmologySource = new WiktionaryEthmology();
+	private VortaroSource translationSource = new GoogleTranslate2();
+	private List<VortaroSource> dictionarySources = Arrays.asList(new ChenVortaro(), new LernuVortaro());
+	private VortaroSource lemmaSource = new Lemmatization();
 
 	/**
 	 * @param vorto
 	 * @param language
 	 * @param timeout
-	 *            最长查询时间，单位毫秒
+	 *                     最长查询时间，单位毫秒
 	 * @return
 	 * @throws InterruptedException
 	 */
@@ -48,53 +47,58 @@ public class Vortaro {
 
 		String formatVorto = formatWord(vorto);
 
-		// 开始查询所有来源
-		Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures = sources.stream().collect( //
-				Collectors.toMap(
-						// keyMapper: key是source本身
-						identity(),
-						// valueMapper: value是future
-						source ->
-						// future第一步: 查询
-						CompletableFuture.supplyAsync(() -> source.queryWithoutException(formatVorto, language))
-								// future第二步: 生成VortaroResult
-								.thenApply(results -> VortaroResult.of(source, results)),
-						// mergeFunction: 遇到重复source，打印错误信息并取第一个结果
-						(u, v) -> {
-							System.err.println("Duplicated sources exist!");
-							return u;
-						},
-						// mapSupplier: 使用LinkedHashMap，以保证按sources的顺序
-						LinkedHashMap::new));
+		String baseForm = baseForm(formatVorto);
 
-		// 等待所有非机翻来源结果
-		waitForResults(allFutures, source -> source.type() != TRADUKILO, startTime, timeout);
+		// 使用LinkedHashMap保存futures，以保证按sources的顺序
+		Map<QueryInfo, CompletableFuture<VortaroResult>> allFutures = new LinkedHashMap<>();
 
-		// 检查有无词典来源的结果
-		boolean hasVortaroResult = allFutures.values().stream().map(future -> future.getNow(null))
-				.filter(Objects::nonNull).anyMatch(result -> result.getSource().type() == VORTARO);
-		// 若没有词典结果，则等待所有机翻结果
-		if (!hasVortaroResult) {
-			waitForResults(allFutures, source -> source.type() == TRADUKILO, startTime, timeout);
+		// 原型查询词源、词典、翻译来源、单词解析
+		startQuery(baseForm, ethmologySource, language, allFutures);
+		dictionarySources.forEach(source -> startQuery(baseForm, source, language, allFutures));
+		startQuery(baseForm, translationSource, language, allFutures);
+		startQuery(formatVorto, lemmaSource, language, allFutures);
+
+		// 本词查询词典、翻译来源
+		if (!baseForm.equals(formatVorto)) {
+			dictionarySources.forEach(source -> startQuery(formatVorto, source, language, allFutures));
+			startQuery(formatVorto, translationSource, language, allFutures);
 		}
 
 		// 收集结果
-		List<VortaroResult> results = allFutures.values().stream()
-				// 取出有效结果
-				.map(future -> future.getNow(null)).filter(Objects::nonNull)
-				// 如果有词典结果，则过滤掉机翻结果
-				.filter(result -> result.getSource().type() != (hasVortaroResult ? TRADUKILO : VORTARO))
-				// 收集
-				.collect(Collectors.toList());
+		List<VortaroResult> results = new ArrayList<>();
+
+		// 第1优先：本词词典结果
+		if (results.isEmpty()) {
+			results.addAll(waitForResults(allFutures, formatVorto, dictionarySources::contains, startTime, timeout));
+		}
+
+		// 第2优先：原形词典结果
+		if (results.isEmpty()) {
+			results.addAll(waitForResults(allFutures, baseForm, dictionarySources::contains, startTime, timeout));
+		}
+
+		// 第3优先：本词翻译结果
+		if (results.isEmpty()) {
+			results.addAll(waitForResults(allFutures, formatVorto, s -> s == translationSource, startTime, timeout));
+		}
+
+		// 第4优先：原形翻译结果
+		if (results.isEmpty()) {
+			results.addAll(waitForResults(allFutures, baseForm, s -> s == translationSource, startTime, timeout));
+		}
+
+		// 如果有结果，添加单词解析和原形词源
+		if (!results.isEmpty()) {
+			waitForResults(allFutures, baseForm, s -> s == ethmologySource, startTime, timeout)
+					.forEach(result -> results.add(0, result));
+			waitForResults(allFutures, formatVorto, s -> s == lemmaSource, startTime, timeout)
+					.forEach(result -> results.add(0, result));
+		}
 
 		// 停止未结束的查询（XXX CompletableFuture不能中断底层任务，只能把自己置为cancelled状态）
 		allFutures.values().stream().filter(future -> !future.isDone()).forEach(future -> future.cancel(true));
 
-		// 返回结果
-		if (!results.isEmpty())
-			return results;
-		else
-			return null;
+		return results.isEmpty() ? null : results;
 	}
 
 	private static final Map<String, String> REPLACE_LETTERS = new HashMap<>();
@@ -115,6 +119,16 @@ public class Vortaro {
 		REPLACE_LETTERS.put("eu", "eŭ");
 	}
 
+	private static class QueryInfo {
+		String vorto;
+		VortaroSource source;
+
+		QueryInfo(String vorto, VortaroSource source) {
+			this.vorto = vorto;
+			this.source = source;
+		}
+	}
+
 	private static String formatWord(String vorto) {
 		String word = vorto.trim().toLowerCase();
 		for (Map.Entry<String, String> replace : REPLACE_LETTERS.entrySet())
@@ -122,22 +136,52 @@ public class Vortaro {
 		return word;
 	}
 
+	private static String baseForm(String vorto) {
+		Lemmatization lemma = Lemmatization.parse(vorto);
+		return lemma.getBaseForm();
+	}
+
+	private static void startQuery(String vorto, VortaroSource source, Language language,
+			Map<QueryInfo, CompletableFuture<VortaroResult>> allFutures) {
+		QueryInfo queryInfo = new QueryInfo(vorto, source);
+		CompletableFuture<VortaroResult> future =
+				// future第一步: 查询
+				CompletableFuture.supplyAsync(() -> source.queryWithoutException(vorto, language))
+						// future第二步: 生成VortaroResult
+						.thenApply(results -> VortaroResult.of(vorto, source, results));
+
+		allFutures.put(queryInfo, future);
+	}
+
 	/**
-	 * 在allFutures中等待指定条件的source的结果，直到结果全部产生或超时。
+	 * 在allFutures中等待指定条件的source的结果，直到结果全部产生或超时，超时时返回当前已经产生的结果。
 	 */
-	private void waitForResults(Map<VortaroSource, CompletableFuture<VortaroResult>> allFutures,
-			Predicate<VortaroSource> sourceFilter, long startTime, int timeout) throws InterruptedException {
+	private List<VortaroResult> waitForResults(Map<QueryInfo, CompletableFuture<VortaroResult>> allFutures,
+			String vorto, Predicate<VortaroSource> sourceFilter, long startTime, int timeout)
+			throws InterruptedException {
+		// 过滤出符合条件的futures
+		List<CompletableFuture<VortaroResult>> matchedFutures = new ArrayList<>();
+		allFutures.forEach((queryInfo, future) -> {
+			if (sourceFilter.test(queryInfo.source) && queryInfo.vorto.equals(vorto))
+				matchedFutures.add(future);
+		});
+		if (matchedFutures.isEmpty())
+			// 没有符合条件的future
+			return Collections.emptyList();
+
 		try {
-			CompletableFuture
-					.allOf(allFutures.entrySet().stream().filter(entry -> sourceFilter.test(entry.getKey()))
-							.map(Map.Entry::getValue).toArray(CompletableFuture[]::new))
+			// 等待所有符合条件的futures
+			CompletableFuture.allOf(matchedFutures.toArray(new CompletableFuture[] {}))
 					.get(startTime + timeout - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 		} catch (ExecutionException e) {
 			// 已经catch了执行异常，不可能出现
 			e.printStackTrace();
+			return Collections.emptyList();
 		} catch (TimeoutException e) {
 			// 时限已到
 		}
+		// 返回已生成的结果
+		return matchedFutures.stream().map(future -> future.getNow(null)).filter(Objects::nonNull).collect(toList());
 	}
 
 }

@@ -112,9 +112,10 @@ public class ChenVortaro implements VortaroSource {
 				if (results.isEmpty())
 					return null;
 				else if (results.size() == 1)
-					return Collections.singletonList(new VortaroSourceResult(results.get(0)));
+					return Collections.singletonList(new VortaroSourceResult(vorto, results.get(0)));
 				else
-					return results.stream().map(VortaroSourceResult::new).collect(Collectors.toList());
+					return results.stream().map(content -> new VortaroSourceResult(vorto, content))
+							.collect(Collectors.toList());
 
 			default:
 				return null;

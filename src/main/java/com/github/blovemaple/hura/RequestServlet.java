@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import org.pmw.tinylog.Logger;
 
 import com.github.blovemaple.hura.ocr.GoogleOcr;
@@ -118,7 +119,7 @@ public class RequestServlet extends HttpServlet {
 				return;
 			case "text":
 				String reqContent = message.getContent();
-				if (reqContent == null || reqContent.isEmpty()) {
+				if (reqContent == null || StringUtils.isBlank(reqContent)) {
 					noResponse(message, response);
 					return;
 				}

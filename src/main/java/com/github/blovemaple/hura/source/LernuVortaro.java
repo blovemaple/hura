@@ -53,6 +53,8 @@ public class LernuVortaro implements VortaroSource {
 				return null;
 
 			String title = item.getElementsByClass("orig").first().text().trim();
+			if (!title.equalsIgnoreCase(vorto))
+				continue;
 
 			StringBuilder content = new StringBuilder();
 
