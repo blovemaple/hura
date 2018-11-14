@@ -11,7 +11,7 @@ public enum Flection {
 
 	PREZENCO("动词现在时", "as", "i"), //
 	PRETERITO("动词过去时", "is", "i"), //
-	FUTURO("动词将来时", "is", "i"), //
+	FUTURO("动词将来时", "os", "i"), //
 	VOLITIVO("意愿式（命令式）动词", "u", "i"), //
 	KONDICIONALO("假定式动词", "us", "i"), //
 
