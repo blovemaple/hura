@@ -27,6 +27,8 @@ public enum WordEnding {
 	}
 
 	public static WordEnding parseEnding(String vorto) {
+		if (vorto.length() <= 2)
+			return null;
 		for (WordEnding ending : values()) {
 			if (vorto.endsWith(ending.ending)) {
 				return ending;

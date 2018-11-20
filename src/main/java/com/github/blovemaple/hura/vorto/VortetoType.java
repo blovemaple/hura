@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public enum VortetoType {
+	DIFINILO("限定词"), //
 	PREPOZICIO("介词"), //
 	PRONOMO("代词"), //
 	NOMBRA_VORTO("数词"), //

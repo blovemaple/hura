@@ -82,6 +82,8 @@ public class Lemmatization implements VortaroSource {
 
 		if (flections.isEmpty())
 			return false;
+		if (remaining.length() <= 2)
+			return false;
 
 		result.setFlections(flections);
 		result.setBaseForm(remaining);
