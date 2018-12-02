@@ -37,7 +37,7 @@ import com.google.common.hash.Hashing;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-@WebServlet("/request")
+@WebServlet("/hura/request")
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 

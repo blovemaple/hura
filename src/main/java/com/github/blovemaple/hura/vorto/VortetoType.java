@@ -1,9 +1,8 @@
 package com.github.blovemaple.hura.vorto;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +11,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.github.blovemaple.hura.SpringContext;
 
 /**
  * 小品词类型。
@@ -45,26 +46,30 @@ public enum VortetoType {
 		try {
 			Pattern namePattern = Pattern.compile("^\\[(.+)\\]$");
 			List<Set<String>> crtVortoj = new ArrayList<>(1);
-			Files.lines(Paths.get(VortetoType.class.getResource("/vortetoj.txt").toURI())).forEach(line -> {
-				if (StringUtils.isBlank(line))
-					return;
-				Matcher matcher = namePattern.matcher(line);
-				if (matcher.matches()) {
-					String name = matcher.group(1).toUpperCase();
-					crtVortoj.clear();
-					VortetoType type = null;
-					try {
-						type = VortetoType.valueOf(name);
-					} catch (Exception e) {
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+					SpringContext.getApplicationContext().getResource("classpath:vortetoj.txt").getInputStream()))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					if (StringUtils.isBlank(line))
+						continue;
+					Matcher matcher = namePattern.matcher(line);
+					if (matcher.matches()) {
+						String name = matcher.group(1).toUpperCase();
+						crtVortoj.clear();
+						VortetoType type = null;
+						try {
+							type = VortetoType.valueOf(name);
+						} catch (Exception e) {
+						}
+						if (type != null)
+							crtVortoj.add(type.vortoj);
+					} else {
+						if (!crtVortoj.isEmpty())
+							crtVortoj.get(0).add(line);
 					}
-					if (type != null)
-						crtVortoj.add(type.vortoj);
-				} else {
-					if (!crtVortoj.isEmpty())
-						crtVortoj.get(0).add(line);
 				}
-			});
-		} catch (IOException | URISyntaxException e) {
+			}
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
