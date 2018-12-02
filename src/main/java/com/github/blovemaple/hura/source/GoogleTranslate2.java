@@ -14,8 +14,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.ParseException;
 
-import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.util.Conf;
+import com.github.blovemaple.hura.util.Language;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.Translate.TranslateOption;

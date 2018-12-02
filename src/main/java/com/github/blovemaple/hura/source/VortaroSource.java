@@ -3,7 +3,7 @@ package com.github.blovemaple.hura.source;
 import java.io.IOException;
 import java.util.List;
 
-import com.github.blovemaple.hura.Language;
+import com.github.blovemaple.hura.util.Language;
 
 /**
  * 词典来源接口。

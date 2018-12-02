@@ -17,7 +17,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import com.github.blovemaple.hura.Language;
+import com.github.blovemaple.hura.util.Language;
 
 /**
  * lernu词典。

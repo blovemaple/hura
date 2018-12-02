@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.abonkonto;
 
 import java.util.List;
 

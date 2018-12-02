@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.util;
 
 import static com.github.blovemaple.hura.util.MyUtils.*;
 

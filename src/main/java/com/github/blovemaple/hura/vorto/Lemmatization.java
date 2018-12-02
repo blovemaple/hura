@@ -9,9 +9,9 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
+import com.github.blovemaple.hura.util.Language;
 import com.github.blovemaple.hura.vorto.Tabelvortoj.FirstPart;
 import com.github.blovemaple.hura.vorto.Tabelvortoj.LastPart;
 

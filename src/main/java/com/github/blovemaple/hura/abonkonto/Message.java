@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.abonkonto;
 
 import com.github.blovemaple.hura.xmlutil.XStreamCDATA;
 import com.thoughtworks.xstream.annotations.XStreamAlias;

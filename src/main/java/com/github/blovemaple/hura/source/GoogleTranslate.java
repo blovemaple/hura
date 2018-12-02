@@ -13,8 +13,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.util.Conf;
+import com.github.blovemaple.hura.util.Language;
 import com.google.gson.Gson;
 
 /**

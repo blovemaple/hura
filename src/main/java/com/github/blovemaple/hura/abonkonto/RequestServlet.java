@@ -1,6 +1,6 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.abonkonto;
 
-import static com.github.blovemaple.hura.ResponseStatus.*;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.*;
 import static java.util.stream.Collectors.*;
 
 import java.io.BufferedReader;

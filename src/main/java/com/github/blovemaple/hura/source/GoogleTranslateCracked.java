@@ -20,7 +20,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import com.github.blovemaple.hura.Language;
+import com.github.blovemaple.hura.util.Language;
 
 /**
  * 谷歌翻译（模拟网页请求）。

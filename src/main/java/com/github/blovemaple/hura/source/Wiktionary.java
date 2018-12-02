@@ -24,10 +24,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import com.github.blovemaple.hura.Language;
 import com.github.blovemaple.hura.source.WikiQueryResult.PageData;
 import com.github.blovemaple.hura.source.WikiQueryResult.QueryData;
 import com.github.blovemaple.hura.source.WikiQueryResult.RevisionData;
+import com.github.blovemaple.hura.util.Language;
 import com.google.gson.Gson;
 
 /**

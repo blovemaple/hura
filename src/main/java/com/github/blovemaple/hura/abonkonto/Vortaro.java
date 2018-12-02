@@ -1,6 +1,6 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.abonkonto;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +21,7 @@ import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.WiktionaryEthmology;
+import com.github.blovemaple.hura.util.Language;
 import com.github.blovemaple.hura.vorto.Lemmatization;
 
 /**
