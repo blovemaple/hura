@@ -3,14 +3,14 @@ package com.github.blovemaple.hura.programeto;
 import java.util.List;
 
 public class UserConf {
-	private List<VortaroUnit> vortaroUnits;
+	private List<VortaroSection> vortaroSections;
 
-	public List<VortaroUnit> getVortaroUnits() {
-		return vortaroUnits;
+	public List<VortaroSection> getVortaroSections() {
+		return vortaroSections;
 	}
 
-	public void setVortaroUnits(List<VortaroUnit> vortaroUnits) {
-		this.vortaroUnits = vortaroUnits;
+	public void setVortaroSections(List<VortaroSection> vortaroSections) {
+		this.vortaroSections = vortaroSections;
 	}
 
 }

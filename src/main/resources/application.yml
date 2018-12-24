@@ -1,0 +1,10 @@
+server:
+  port: 80
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+spring:
+  profiles:
+    include: private

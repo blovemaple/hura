@@ -1,4 +1,4 @@
-package com.github.blovemaple.hura;
+package com.github.blovemaple.hura.util;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;

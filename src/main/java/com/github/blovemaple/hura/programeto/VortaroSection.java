@@ -1,10 +1,10 @@
 package com.github.blovemaple.hura.programeto;
 
-public class VortaroUnit {
+public class VortaroSection {
 	private String key;
 	private String name;
 
-	public VortaroUnit(String key, String name) {
+	public VortaroSection(String key, String name) {
 		this.key = key;
 		this.name = name;
 	}

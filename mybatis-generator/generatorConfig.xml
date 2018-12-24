@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN" "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+	<properties resource="application-private.properties" />
+
+	<context id="context1">
+		<property name="javaFileEncoding" value="UTF-8" />
+		<property name="javaFormatter"
+			value="org.mybatis.generator.api.dom.DefaultJavaFormatter" />
+
+		<plugin
+			type="org.mybatis.generator.plugins.MapperAnnotationPlugin" />
+
+		<commentGenerator>
+			<property name="suppressAllComments" value="false" />
+			<property name="suppressDate" value="false" />
+			<property name="addRemarkComments" value="true" />
+		</commentGenerator>
+
+		<jdbcConnection connectionURL="${spring.datasource.url}"
+			driverClass="${spring.datasource.driver-class-name}" password="${spring.datasource.password}"
+			userId="${spring.datasource.username}" />
+		<javaModelGenerator
+			targetPackage="com.github.blovemaple.hura.dal"
+			targetProject="hura/src/main/java" />
+		<javaClientGenerator
+			targetPackage="com.github.blovemaple.hura.dal"
+			targetProject="hura/src/main/java" type="ANNOTATEDMAPPER" />
+
+
+
+		<table tableName="abonkonto_log">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+			<columnOverride column="request"
+				javaType="java.lang.String" jdbcType="VARCHAR" />
+			<columnOverride column="response"
+				javaType="java.lang.String" jdbcType="VARCHAR" />
+		</table>
+
+		<table tableName="programeto_login_log">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+		</table>
+
+		<table tableName="programeto_login_log">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+		</table>
+
+		<table tableName="programeto_query_log">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+			<columnOverride column="result"
+				javaType="java.lang.String" jdbcType="VARCHAR" />
+		</table>
+
+	</context>
+</generatorConfiguration>

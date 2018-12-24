@@ -1,29 +1,68 @@
 package com.github.blovemaple.hura.programeto;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.github.blovemaple.hura.PrivateConf;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.blovemaple.hura.dal.ProgrametoLoginLog;
+import com.github.blovemaple.hura.dal.ProgrametoLoginLogMapper;
+import com.github.blovemaple.hura.dal.ProgrametoQueryLog;
+import com.github.blovemaple.hura.dal.ProgrametoQueryLogMapper;
+import com.github.blovemaple.hura.source.ChenVortaro;
+import com.github.blovemaple.hura.source.GoogleTranslate2;
+import com.github.blovemaple.hura.source.LernuVortaro;
+import com.github.blovemaple.hura.source.VortaroSource;
+import com.github.blovemaple.hura.source.VortaroSourceResult;
+import com.github.blovemaple.hura.source.Wiktionary;
+import com.github.blovemaple.hura.util.PrivateConf;
+import com.github.blovemaple.hura.vorto.Lemmatization;
 
+/**
+ * Hura微信小程序服务。
+ * 
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 @RestController
 @RequestMapping("/hura-programeto")
 public class ProgrametoService {
 	@Autowired
 	private PrivateConf privateConf;
+	@Autowired
+	private ProgrametoLoginLogMapper loginLogMapper;
+	@Autowired
+	private ProgrametoQueryLogMapper queryLogMapper;
 
 	private WXSnsService wxService = WXSnsService.create();
+	private ObjectMapper jackson = new ObjectMapper();
 
 	private Map<String, LoginInfo> loginInfos = new HashMap<>();
+	{
+		loginInfos.put("0", new LoginInfo());
+	}
 
-	private static final List<VortaroUnit> VORTARO_UNITS = List.of();
+	private static final List<VortaroSource> SOURCES = List.of( //
+			new Lemmatization(), //
+			new ChenVortaro(), new LernuVortaro(), //
+			new GoogleTranslate2(), //
+			new Wiktionary() //
+	);
+	private static final Map<String, VortaroSource> SOURCES_BY_KEY = //
+			SOURCES.stream().collect(
+					Collectors.toMap(source -> source.getClass().getSimpleName().toLowerCase(), source -> source));
+	private static final List<VortaroSection> VORTARO_SECTIONS = //
+			SOURCES.stream()
+					.map(source -> new VortaroSection(source.getClass().getSimpleName().toLowerCase(), source.name()))
+					.collect(Collectors.toList());
 
 	/**
 	 * 发送code登录，返回登录key。
@@ -34,12 +73,23 @@ public class ProgrametoService {
 	 * @throws IOException
 	 */
 	@RequestMapping("/login")
-	private LoginResponse login(@RequestParam("code") String code) throws IOException, InterruptedException {
+	public LoginResponse login(@RequestParam("code") String code) throws IOException, InterruptedException {
+		long startTime = System.currentTimeMillis();
 		WXCode2SessionResponse res = wxService.jscode2session(privateConf.getWxProgrametoAppid(),
 				privateConf.getWxProgrametoSecret(), code, "authorization_code");
 		switch (res.getErrcode()) {
 		case WXCode2SessionResponse.ERRCODE_SUCCESS:
-			return LoginResponse.success(login(res), conf(res.getUnionid()));
+			LoginResponse response = LoginResponse.success(login(res), conf(res.getUnionid()));
+
+			ProgrametoLoginLog log = new ProgrametoLoginLog();
+			log.setTime(new Date());
+			log.setCost((int) (System.currentTimeMillis() - startTime));
+			log.setCode(code);
+			log.setOpenid(res.getOpenid());
+			log.setUnionid(res.getUnionid());
+			loginLogMapper.insertSelective(log);
+
+			return response;
 		case WXCode2SessionResponse.ERRCODE_INVALID:
 			return LoginResponse.failed();
 		default:
@@ -55,16 +105,62 @@ public class ProgrametoService {
 
 	private UserConf conf(String unionid) {
 		UserConf conf = new UserConf();
-		conf.setVortaroUnits(VORTARO_UNITS);
+		conf.setVortaroSections(VORTARO_SECTIONS);
 		return conf;
 	}
 
 	/**
 	 * 查询一个词典的结果。
+	 * 
+	 * @throws InvalidLoginKeyException
+	 * @throws InvalidSectionKeyException
+	 * @throws IOException
 	 */
 	@RequestMapping("/query")
-	private void query(@RequestParam("loginkey") String loginKey, @RequestParam("vorto") String vorto,
-			@RequestParam("vortaro") String vortaro) {
+	public QueryResponse query(@RequestParam("loginkey") String loginKey, @RequestParam("query") String query,
+			@RequestParam("sectionkey") String sectionKey)
+			throws InvalidLoginKeyException, InvalidSectionKeyException, IOException {
+		long startTime = System.currentTimeMillis();
 
+		LoginInfo loginInfo = validateLogin(loginKey);
+		VortaroSource source = validateSectionKey(sectionKey);
+
+		if (query == null || query.isBlank())
+			return QueryResponse.empty();
+
+		List<VortaroSourceResult> sourceResults = source.query(query);
+		if (sourceResults == null)
+			sourceResults = List.of();
+
+		ProgrametoQueryLog log = new ProgrametoQueryLog();
+		log.setTime(new Date());
+		log.setCost((int) (System.currentTimeMillis() - startTime));
+		log.setOpenid(loginInfo.getOpenid());
+		log.setUnionid(loginInfo.getUnionid());
+		log.setQuery(query);
+		log.setSectionKey(sectionKey);
+		log.setHasResult(!sourceResults.isEmpty());
+		log.setResult(jackson.writeValueAsString(sourceResults));
+		queryLogMapper.insertSelective(log);
+
+		return new QueryResponse(sourceResults);
+	}
+
+	private LoginInfo validateLogin(String loginKey) throws InvalidLoginKeyException {
+		if (loginKey == null)
+			throw new InvalidLoginKeyException();
+		LoginInfo loginInfo = loginInfos.get(loginKey);
+		if (loginInfo == null)
+			throw new InvalidLoginKeyException();
+		return loginInfo;
+	}
+
+	private VortaroSource validateSectionKey(String sectionKey) throws InvalidSectionKeyException {
+		if (sectionKey == null)
+			throw new InvalidSectionKeyException();
+		VortaroSource source = SOURCES_BY_KEY.get(sectionKey);
+		if (source == null)
+			throw new InvalidSectionKeyException();
+		return source;
 	}
 }

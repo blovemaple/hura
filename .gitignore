@@ -8,6 +8,8 @@
 .settings
 /target/
 /WebContent/
+/Scripts/
 
 private.properties
 google-credentials.json
+application-private.properties
