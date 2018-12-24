@@ -1,7 +1,13 @@
 package com.github.blovemaple.hura.abonkonto;
 
-import static com.github.blovemaple.hura.abonkonto.ResponseStatus.*;
-import static java.util.stream.Collectors.*;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.FAIL;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.ILGL;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.NOSU;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.NULL;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.SERR;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.SUCC;
+import static com.github.blovemaple.hura.abonkonto.ResponseStatus.TOKN;
+import static java.util.stream.Collectors.toList;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,7 +15,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -20,8 +26,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.pmw.tinylog.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import com.github.blovemaple.hura.dal.AbonkontoLog;
+import com.github.blovemaple.hura.dal.AbonkontoLogMapper;
 import com.github.blovemaple.hura.ocr.GoogleOcr;
 import com.github.blovemaple.hura.ocr.OcrResult;
 import com.github.blovemaple.hura.ocr.OcrResultType;
@@ -37,7 +46,8 @@ import com.google.common.hash.Hashing;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-@WebServlet("/hura/request")
+@WebServlet("/hura-abonkonto/request")
+@Component
 public class RequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
@@ -53,6 +63,9 @@ public class RequestServlet extends HttpServlet {
 	private Vortaro vortaro = new Vortaro();
 	private GoogleOcr ocr = new GoogleOcr();
 	private GoogleTranslate2 googleTranslate = new GoogleTranslate2();
+
+	@Autowired
+	private AbonkontoLogMapper logMapper;
 
 	@SuppressWarnings("unused")
 	private String myUserName;
@@ -186,8 +199,7 @@ public class RequestServlet extends HttpServlet {
 						response);
 				return;
 			default:
-				writeResponse(NOSU, startTime,
-						"Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦。 :)", message,
+				writeResponse(NOSU, startTime, "Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦。 :)", message,
 						response);
 				return;
 			}
@@ -225,7 +237,7 @@ public class RequestServlet extends HttpServlet {
 	private boolean echostr(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		String echostr = request.getParameter("echostr");
 		if (echostr != null && checkValid(request, response, null)) {
-			PrintWriter writer = response.getWriter();
+			PrintWriter writer = new PrintWriter(response.getOutputStream(), false, Charset.forName("UTF-8"));
 			writer.print(echostr);
 			writer.flush();
 			log(TOKN, null, null, null);
@@ -307,7 +319,7 @@ public class RequestServlet extends HttpServlet {
 		resMessage.setContent(resContent);
 
 		response.setCharacterEncoding("UTF-8");
-		PrintWriter writer = response.getWriter();
+		PrintWriter writer = new PrintWriter(response.getOutputStream(), false, Charset.forName("UTF-8"));
 		String resString = XmlUtils.toXml(resMessage);
 		writer.print(resString);
 		writer.flush();
@@ -324,34 +336,32 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	private void log(ResponseStatus status, Long startTime, Message reqMessage, String resContent) {
-		// status cost fromuser type req res
-		Logger.info(() -> {
-			long cost = startTime == null ? -1 : System.currentTimeMillis() - startTime;
-			List<String> infos = new ArrayList<>();
+		long cost = startTime == null ? -1 : System.currentTimeMillis() - startTime;
 
-			infos.add(status.name());
-			infos.add(Long.toString(cost));
-			infos.add(reqMessage == null ? "null" : reqMessage.getFromUserName());
-			infos.add(reqMessage == null ? "null" : reqMessage.getMsgType());
-			String reqContent;
-			switch (reqMessage == null ? "null" : reqMessage.getMsgType()) {
-			case "event":
-				reqContent = reqMessage.getEvent();
-				break;
-			case "text":
-				reqContent = reqMessage.getContent();
-				break;
-			case "image":
-				reqContent = reqMessage.getPicUrl();
-				break;
-			default:
-				reqContent = "null";
-			}
-			infos.add(reqContent.replaceAll("[\\r\\n\\s]", " "));
-			infos.add(resContent == null ? "null" : resContent.replaceAll("[\\r\\n\\s]", " "));
-
-			return String.join("\t", infos);
-		});
+		AbonkontoLog log = new AbonkontoLog();
+		log.setTime(new Date());
+		log.setStatus(status.name());
+		log.setCost((int) cost);
+		log.setOpenid(reqMessage == null ? "" : reqMessage.getFromUserName());
+		log.setUnionid("");
+		log.setMsgType(reqMessage == null ? "null" : reqMessage.getMsgType());
+		String reqContent;
+		switch (reqMessage == null ? "null" : reqMessage.getMsgType()) {
+		case "event":
+			reqContent = reqMessage.getEvent();
+			break;
+		case "text":
+			reqContent = reqMessage.getContent();
+			break;
+		case "image":
+			reqContent = reqMessage.getPicUrl();
+			break;
+		default:
+			reqContent = "null";
+		}
+		log.setRequest(reqContent);
+		log.setResponse(resContent == null ? "null" : resContent);
+		logMapper.insertSelective(log);
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
