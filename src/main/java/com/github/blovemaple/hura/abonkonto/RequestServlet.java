@@ -336,7 +336,7 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	private void log(ResponseStatus status, Long startTime, Message reqMessage, String resContent) {
-		long cost = startTime == null ? -1 : System.currentTimeMillis() - startTime;
+		long cost = startTime == null ? 0 : System.currentTimeMillis() - startTime;
 
 		AbonkontoLog log = new AbonkontoLog();
 		log.setTime(new Date());
@@ -344,9 +344,9 @@ public class RequestServlet extends HttpServlet {
 		log.setCost((int) cost);
 		log.setOpenid(reqMessage == null ? "" : reqMessage.getFromUserName());
 		log.setUnionid("");
-		log.setMsgType(reqMessage == null ? "null" : reqMessage.getMsgType());
+		log.setMsgType(reqMessage == null ? "" : reqMessage.getMsgType());
 		String reqContent;
-		switch (reqMessage == null ? "null" : reqMessage.getMsgType()) {
+		switch (reqMessage == null ? "" : reqMessage.getMsgType()) {
 		case "event":
 			reqContent = reqMessage.getEvent();
 			break;
@@ -357,10 +357,10 @@ public class RequestServlet extends HttpServlet {
 			reqContent = reqMessage.getPicUrl();
 			break;
 		default:
-			reqContent = "null";
+			reqContent = "";
 		}
 		log.setRequest(reqContent);
-		log.setResponse(resContent == null ? "null" : resContent);
+		log.setResponse(resContent == null ? "" : resContent);
 		logMapper.insertSelective(log);
 	}
 
