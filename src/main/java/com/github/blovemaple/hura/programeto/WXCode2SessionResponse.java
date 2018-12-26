@@ -1,5 +1,8 @@
 package com.github.blovemaple.hura.programeto;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class WXCode2SessionResponse extends LoginInfo {
 	private Integer errcode;
 	private String errmsg;
@@ -21,6 +24,15 @@ public class WXCode2SessionResponse extends LoginInfo {
 
 	public void setErrmsg(String errmsg) {
 		this.errmsg = errmsg;
+	}
+
+	@Override
+	public String toString() {
+		try {
+			return new ObjectMapper().writeValueAsString(this);
+		} catch (JsonProcessingException e) {
+			return "(Error processing json: " + e + ")";
+		}
 	}
 
 }

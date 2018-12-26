@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +29,8 @@ import com.github.blovemaple.hura.source.Wiktionary;
 import com.github.blovemaple.hura.util.PrivateConf;
 import com.github.blovemaple.hura.vorto.Lemmatization;
 
+import retrofit2.Response;
+
 /**
  * Hura微信小程序服务。
  * 
@@ -35,6 +39,8 @@ import com.github.blovemaple.hura.vorto.Lemmatization;
 @RestController
 @RequestMapping("/hura-programeto")
 public class ProgrametoService {
+	private static final Logger logger = LoggerFactory.getLogger(ProgrametoService.class);
+
 	@Autowired
 	private PrivateConf privateConf;
 	@Autowired
@@ -75,8 +81,17 @@ public class ProgrametoService {
 	@RequestMapping("/login")
 	public LoginResponse login(@RequestParam("code") String code) throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
-		WXCode2SessionResponse res = wxService.jscode2session(privateConf.getWxProgrametoAppid(),
-				privateConf.getWxProgrametoSecret(), code, "authorization_code");
+		Response<WXCode2SessionResponse> httpRes = wxService.jscode2session(privateConf.getWxProgrametoAppid(),
+				privateConf.getWxProgrametoSecret(), code, "authorization_code").execute();
+		if (!httpRes.isSuccessful()) {
+			logger.error("Requesting wxService.jscode2session failed: " + httpRes);
+			return LoginResponse.failed();
+		}
+
+		WXCode2SessionResponse res = httpRes.body();
+		logger.info("Requesting wxService.jscode2session succeeded: " + httpRes + ", " + res);
+		if (res.getErrcode() == null)
+			res.setErrcode(WXCode2SessionResponse.ERRCODE_SUCCESS);
 		switch (res.getErrcode()) {
 		case WXCode2SessionResponse.ERRCODE_SUCCESS:
 			LoginResponse response = LoginResponse.success(login(res), conf(res.getUnionid()));
@@ -93,6 +108,7 @@ public class ProgrametoService {
 		case WXCode2SessionResponse.ERRCODE_INVALID:
 			return LoginResponse.failed();
 		default:
+			logger.error("Requesting wxService.jscode2session failed with errcode: " + httpRes);
 			return LoginResponse.failed();
 		}
 	}

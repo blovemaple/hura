@@ -1,5 +1,6 @@
 package com.github.blovemaple.hura.programeto;
 
+import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.GET;
@@ -14,7 +15,7 @@ public interface WXSnsService {
 	}
 
 	@GET("jscode2session")
-	WXCode2SessionResponse jscode2session( //
+	Call<WXCode2SessionResponse> jscode2session( //
 			@Query("appid") String appid, //
 			@Query("secret") String secret, //
 			@Query("js_code") String jsCode, //
