@@ -1,13 +1,16 @@
 package com.github.blovemaple.hura.vorto;
 
+import java.util.List;
+
 /**
  * 单词屈折形式。
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public enum Flection {
-	PLURALO("复数", "j", ""), //
-	AKUZATIVO("宾格（或度量、时间点、方向等）", "n", ""), //
+	PLURALO_AND_AKUZATIVO("复数、宾格（或度量、时间点、方向等）", "jn", "", "a", "o"), //
+	PLURALO("复数", "j", "", "a", "o"), //
+	AKUZATIVO("宾格（或度量、时间点、方向等）", "n", "", "a", "o", "j"), //
 
 	PREZENCO("动词现在时", "as", "i"), //
 	PRETERITO("动词过去时", "is", "i"), //
@@ -38,11 +41,13 @@ public enum Flection {
 	private String name;
 	private String ending;
 	private String baseFormEnding;
+	private List<String> legalPrevious;
 
-	private Flection(String name, String ending, String baseFormEnding) {
+	private Flection(String name, String ending, String baseFormEnding,String... legalPrevious) {
 		this.name = name;
 		this.ending = ending;
 		this.baseFormEnding = baseFormEnding;
+		this.legalPrevious = List.of(legalPrevious);
 	}
 
 	public String getName() {
@@ -55,6 +60,10 @@ public enum Flection {
 
 	public String getBaseFormEnding() {
 		return baseFormEnding;
+	}
+
+	public List<String> getLegalPrevious() {
+		return legalPrevious;
 	}
 
 }

@@ -72,10 +72,15 @@ public class Lemmatization implements VortaroSource {
 			added = false;
 			for (Flection flection : Flection.values()) {
 				if (remaining.endsWith(flection.getEnding())) {
-					flections.add(0, flection);
-					added = true;
-					remaining = remaining.replaceFirst(flection.getEnding() + "$", flection.getBaseFormEnding());
-					break;
+					String tryRemaining = remaining.replaceFirst(flection.getEnding() + "$",
+							flection.getBaseFormEnding());
+					if (flection.getLegalPrevious().isEmpty()
+							|| flection.getLegalPrevious().stream().anyMatch(tryRemaining::endsWith)) {
+						flections.add(0, flection);
+						remaining = tryRemaining;
+						added = true;
+						break;
+					}
 				}
 			}
 		} while (added);
@@ -83,6 +88,8 @@ public class Lemmatization implements VortaroSource {
 		if (flections.isEmpty())
 			return false;
 		if (remaining.length() <= 2)
+			return false;
+		if (parse(remaining).isEmpty())
 			return false;
 
 		result.setFlections(flections);
@@ -126,6 +133,18 @@ public class Lemmatization implements VortaroSource {
 			return null;
 
 		return Collections.singletonList(new VortaroSourceResult(content));
+	}
+
+	private boolean isEmpty() {
+		if (getVortetoType() != null)
+			return false;
+		if (getTabelParts() != null)
+			return false;
+		if (getFlections() != null)
+			return false;
+		if (getEnding() != null)
+			return false;
+		return true;
 	}
 
 	public String getOriginal() {
