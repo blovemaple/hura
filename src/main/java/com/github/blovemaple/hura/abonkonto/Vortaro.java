@@ -1,11 +1,10 @@
 package com.github.blovemaple.hura.abonkonto;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.WiktionaryEthmology;
 import com.github.blovemaple.hura.util.Language;
+import com.github.blovemaple.hura.util.MyUtils;
 import com.github.blovemaple.hura.vorto.Lemmatization;
 
 /**
@@ -46,7 +46,7 @@ public class Vortaro {
 	public List<VortaroResult> query(String vorto, Language language, int timeout) throws InterruptedException {
 		long startTime = System.currentTimeMillis();
 
-		String formatVorto = formatWord(vorto);
+		String formatVorto = MyUtils.formatWord(vorto);
 
 		String baseForm = baseForm(formatVorto);
 
@@ -102,24 +102,6 @@ public class Vortaro {
 		return results.isEmpty() ? null : results;
 	}
 
-	private static final Map<String, String> REPLACE_LETTERS = new HashMap<>();
-	static {
-		REPLACE_LETTERS.put("cx", "ĉ");
-		REPLACE_LETTERS.put("gx", "ĝ");
-		REPLACE_LETTERS.put("hx", "ĥ");
-		REPLACE_LETTERS.put("jx", "ĵ");
-		REPLACE_LETTERS.put("sx", "ŝ");
-		REPLACE_LETTERS.put("ux", "ŭ");
-		REPLACE_LETTERS.put("ch", "ĉ");
-		REPLACE_LETTERS.put("gh", "ĝ");
-		REPLACE_LETTERS.put("hh", "ĥ");
-		REPLACE_LETTERS.put("jh", "ĵ");
-		REPLACE_LETTERS.put("sh", "ŝ");
-		REPLACE_LETTERS.put("uh", "ŭ");
-		REPLACE_LETTERS.put("au", "aŭ");
-		REPLACE_LETTERS.put("eu", "eŭ");
-	}
-
 	private static class QueryInfo {
 		String vorto;
 		VortaroSource source;
@@ -128,13 +110,6 @@ public class Vortaro {
 			this.vorto = vorto;
 			this.source = source;
 		}
-	}
-
-	private static String formatWord(String vorto) {
-		String word = vorto.trim().toLowerCase();
-		for (Map.Entry<String, String> replace : REPLACE_LETTERS.entrySet())
-			word = word.replaceAll(replace.getKey(), replace.getValue());
-		return word;
 	}
 
 	private static String baseForm(String vorto) {

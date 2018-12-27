@@ -26,6 +26,7 @@ import com.github.blovemaple.hura.source.LernuVortaro;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.source.Wiktionary;
+import com.github.blovemaple.hura.util.MyUtils;
 import com.github.blovemaple.hura.util.PrivateConf;
 import com.github.blovemaple.hura.vorto.Lemmatization;
 
@@ -144,7 +145,20 @@ public class ProgrametoService {
 		if (query == null || query.isBlank())
 			return QueryResponse.empty();
 
-		List<VortaroSourceResult> sourceResults = source.query(query);
+		// 格式化
+		String formatQuery = MyUtils.formatWord(query);
+		String baseForm = formatQuery;
+		if (source.getClass() != Lemmatization.class) {
+			// 查询的source不是单词解析，取单词原型
+			baseForm = Lemmatization.parse(formatQuery).getBaseForm();
+		}
+
+		// 先查query，query没查到再查原型
+		List<VortaroSourceResult> sourceResults = source.query(formatQuery);
+		if (sourceResults == null || sourceResults.isEmpty())
+			if (!baseForm.equals(formatQuery))
+				sourceResults = source.query(baseForm);
+
 		if (sourceResults == null)
 			sourceResults = List.of();
 
