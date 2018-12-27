@@ -55,7 +55,7 @@ public class Wiktionary implements VortaroSource {
 
 	@Override
 	public String name() {
-		return "维基词典";
+		return "VIKIVORTARO(La angla)";
 	}
 
 	@Override
