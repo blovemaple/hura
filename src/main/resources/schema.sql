@@ -1,5 +1,19 @@
 CREATE DATABASE IF NOT EXISTS `hura`;
 
+CREATE TABLE `hura`.`user` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `openid` varchar(63) NOT NULL,
+  `unionid` varchar(63) NOT NULL DEFAULT '',
+  `nick_name` varchar(63) NOT NULL DEFAULT '',
+  `avatar_url` varchar(1024) NOT NULL DEFAULT '',
+  `gender` tinyint(3) NOT NULL DEFAULT 0,
+  `country` varchar(63) NOT NULL DEFAULT '',
+  `province` varchar(63) NOT NULL DEFAULT '',
+  `city` varchar(63) NOT NULL DEFAULT '',
+  `language` varchar(63) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE `hura`.`abonkonto_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `time` datetime NOT NULL,

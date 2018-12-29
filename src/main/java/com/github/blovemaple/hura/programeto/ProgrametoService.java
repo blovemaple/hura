@@ -10,16 +10,23 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.blovemaple.hura.dal.ProgrametoLoginLog;
 import com.github.blovemaple.hura.dal.ProgrametoLoginLogMapper;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLog;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLogMapper;
+import com.github.blovemaple.hura.dal.User;
+import com.github.blovemaple.hura.dal.UserExample;
+import com.github.blovemaple.hura.dal.UserMapper;
 import com.github.blovemaple.hura.source.ChenVortaro;
 import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.LernuVortaro;
@@ -48,6 +55,8 @@ public class ProgrametoService {
 	private ProgrametoLoginLogMapper loginLogMapper;
 	@Autowired
 	private ProgrametoQueryLogMapper queryLogMapper;
+	@Autowired
+	private UserMapper userMapper;
 
 	private WXSnsService wxService = WXSnsService.create();
 	private ObjectMapper jackson = new ObjectMapper();
@@ -79,11 +88,11 @@ public class ProgrametoService {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	@RequestMapping("/login")
-	public LoginResponse login(@RequestParam("code") String code) throws IOException, InterruptedException {
+	@RequestMapping(value = "/login", method = RequestMethod.POST)
+	public LoginResponse login(@RequestBody LoginRequest request) throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
 		Response<WXCode2SessionResponse> httpRes = wxService.jscode2session(privateConf.getWxProgrametoAppid(),
-				privateConf.getWxProgrametoSecret(), code, "authorization_code").execute();
+				privateConf.getWxProgrametoSecret(), request.getLoginCode(), "authorization_code").execute();
 		if (!httpRes.isSuccessful()) {
 			logger.error("Requesting wxService.jscode2session failed: " + httpRes);
 			return LoginResponse.failed();
@@ -97,10 +106,12 @@ public class ProgrametoService {
 		case WXCode2SessionResponse.ERRCODE_SUCCESS:
 			LoginResponse response = LoginResponse.success(login(res), conf(res.getUnionid()));
 
+			saveUser(request.getUserInfo(), res);
+
 			ProgrametoLoginLog log = new ProgrametoLoginLog();
 			log.setTime(new Date());
 			log.setCost((int) (System.currentTimeMillis() - startTime));
-			log.setCode(code);
+			log.setCode(request.getLoginCode());
 			log.setOpenid(res.getOpenid());
 			log.setUnionid(res.getUnionid());
 			loginLogMapper.insertSelective(log);
@@ -126,6 +137,46 @@ public class ProgrametoService {
 		return conf;
 	}
 
+	private void saveUser(WxUserInfo userInfo, LoginInfo loginInfo) {
+		UserExample userExample = new UserExample();
+		userExample.createCriteria().andOpenidEqualTo(loginInfo.getOpenid());
+		List<User> users = userMapper.selectByExample(userExample);
+
+		if (users.isEmpty()) {
+			User user = new User();
+			user.setOpenid(loginInfo.getOpenid());
+			user.setUnionid(loginInfo.getUnionid());
+			BeanUtils.copyProperties(userInfo, user);
+			try {
+				logger.info("New user: " + jackson.writeValueAsString(userInfo));
+				logger.info("DB user: " + jackson.writeValueAsString(user));
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
+			userMapper.insertSelective(user);
+		} else {
+			User user = users.get(0);
+			BeanUtils.copyProperties(userInfo, user);
+			userMapper.updateByPrimaryKeySelective(user);
+		}
+	}
+
+	/**
+	 * 验证登录key是否有效。
+	 * 
+	 * @param code
+	 * @return
+	 */
+	@RequestMapping("/validatelogin")
+	public ValidateLoginResponse validateLogin(@RequestParam("loginkey") String loginKey) {
+		try {
+			validateLogin0(loginKey);
+			return ValidateLoginResponse.success();
+		} catch (InvalidLoginKeyException e) {
+			return ValidateLoginResponse.failed();
+		}
+	}
+
 	/**
 	 * 查询一个词典的结果。
 	 * 
@@ -139,7 +190,7 @@ public class ProgrametoService {
 			throws InvalidLoginKeyException, InvalidSectionKeyException, IOException {
 		long startTime = System.currentTimeMillis();
 
-		LoginInfo loginInfo = validateLogin(loginKey);
+		LoginInfo loginInfo = validateLogin0(loginKey);
 		VortaroSource source = validateSectionKey(sectionKey);
 
 		if (query == null || query.isBlank())
@@ -176,7 +227,7 @@ public class ProgrametoService {
 		return new QueryResponse(sourceResults);
 	}
 
-	private LoginInfo validateLogin(String loginKey) throws InvalidLoginKeyException {
+	private LoginInfo validateLogin0(String loginKey) throws InvalidLoginKeyException {
 		if (loginKey == null)
 			throw new InvalidLoginKeyException();
 		LoginInfo loginInfo = loginInfos.get(loginKey);

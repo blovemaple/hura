@@ -1,5 +1,8 @@
 package com.github.blovemaple.hura.programeto;
 
+/**
+ * @author blovemaple <blovemaple2010(at)gmail.com>
+ */
 public class LoginResponse {
 	private Boolean success;
 	private String loginKey;
