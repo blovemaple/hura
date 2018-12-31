@@ -123,7 +123,7 @@ public class RequestServlet extends HttpServlet {
 			case "event":
 				if ("subscribe".equals(message.getEvent())) {
 					writeResponse(SUCC, startTime, "Bonvenon!\n"
-							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，向我（Hura公众号）以文字或图片消息发送世界语或汉语即可得到词典解释或翻译。目前Hura的词典来源为陈在伟老师提供的世汉词典，以及lernu.net词典作为辅助；若两个词典均查不到，则会使用谷歌翻译。\n"
+							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，请点击右上角图标，在“相关小程序”中使用“Hura世界语助手”小程序。如果不想使用小程序，也可以直接向我（Hura公众号）发送文字或图片消息即可得到查询结果。\n"
 							+ "目前Hura还不成熟，如有改进建议请发送邮件给作者：blovemaple2010@gmail.com。\n"
 							+ "Hura后台服务代码开源，如果你是程序猿/媛朋友，可在Github上搜索“hura”。\n" + "希望Hura能帮到你。 :)", message, response);
 					return;
