@@ -12,7 +12,7 @@ CREATE TABLE `hura`.`user` (
   `city` varchar(63) NOT NULL DEFAULT '',
   `language` varchar(63) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `hura`.`abonkonto_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -25,7 +25,7 @@ CREATE TABLE `hura`.`abonkonto_log` (
   `request` text NOT NULL,
   `response` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `hura`.`programeto_login_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -35,7 +35,7 @@ CREATE TABLE `hura`.`programeto_login_log` (
   `openid` varchar(63) NOT NULL,
   `unionid` varchar(63) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `hura`.`programeto_query_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -48,4 +48,4 @@ CREATE TABLE `hura`.`programeto_query_log` (
   `has_result` tinyint(1) NOT NULL,
   `result` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
