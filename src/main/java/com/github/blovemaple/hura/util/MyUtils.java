@@ -58,7 +58,6 @@ public class MyUtils {
 		REPLACE_LETTERS.put("hh", "ĥ");
 		REPLACE_LETTERS.put("jh", "ĵ");
 		REPLACE_LETTERS.put("sh", "ŝ");
-		REPLACE_LETTERS.put("uh", "ŭ");
 		REPLACE_LETTERS.put("au", "aŭ");
 		REPLACE_LETTERS.put("eu", "eŭ");
 	}
