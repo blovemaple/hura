@@ -146,6 +146,7 @@ public class ProgrametoService {
 			User user = new User();
 			user.setOpenid(loginInfo.getOpenid());
 			user.setUnionid(loginInfo.getUnionid());
+			user.setAddtime(new Date());
 			BeanUtils.copyProperties(userInfo, user);
 			try {
 				logger.info("New user: " + jackson.writeValueAsString(userInfo));

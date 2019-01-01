@@ -2,6 +2,7 @@ package com.github.blovemaple.hura.dal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
 
 public class UserExample {
     /**
@@ -839,6 +840,66 @@ public class UserExample {
 
 		public Criteria andLanguageNotBetween(String value1, String value2) {
 			addCriterion("language not between", value1, value2, "language");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeIsNull() {
+			addCriterion("addtime is null");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeIsNotNull() {
+			addCriterion("addtime is not null");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeEqualTo(Date value) {
+			addCriterion("addtime =", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeNotEqualTo(Date value) {
+			addCriterion("addtime <>", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeGreaterThan(Date value) {
+			addCriterion("addtime >", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeGreaterThanOrEqualTo(Date value) {
+			addCriterion("addtime >=", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeLessThan(Date value) {
+			addCriterion("addtime <", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeLessThanOrEqualTo(Date value) {
+			addCriterion("addtime <=", value, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeIn(List<Date> values) {
+			addCriterion("addtime in", values, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeNotIn(List<Date> values) {
+			addCriterion("addtime not in", values, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeBetween(Date value1, Date value2) {
+			addCriterion("addtime between", value1, value2, "addtime");
+			return (Criteria) this;
+		}
+
+		public Criteria andAddtimeNotBetween(Date value1, Date value2) {
+			addCriterion("addtime not between", value1, value2, "addtime");
 			return (Criteria) this;
 		}
 	}

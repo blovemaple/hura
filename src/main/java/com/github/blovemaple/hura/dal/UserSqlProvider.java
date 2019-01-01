@@ -66,6 +66,9 @@ public class UserSqlProvider {
 		if (record.getLanguage() != null) {
 			sql.VALUES("language", "#{language,jdbcType=VARCHAR}");
 		}
+		if (record.getAddtime() != null) {
+			sql.VALUES("addtime", "#{addtime,jdbcType=TIMESTAMP}");
+		}
 		return sql.toString();
 	}
 
@@ -89,6 +92,7 @@ public class UserSqlProvider {
 		sql.SELECT("province");
 		sql.SELECT("city");
 		sql.SELECT("language");
+		sql.SELECT("addtime");
 		sql.FROM("user");
 		applyWhere(sql, example, false);
 		if (example != null && example.getOrderByClause() != null) {
@@ -136,6 +140,9 @@ public class UserSqlProvider {
 		if (record.getLanguage() != null) {
 			sql.SET("language = #{record.language,jdbcType=VARCHAR}");
 		}
+		if (record.getAddtime() != null) {
+			sql.SET("addtime = #{record.addtime,jdbcType=TIMESTAMP}");
+		}
 		applyWhere(sql, example, true);
 		return sql.toString();
 	}
@@ -157,6 +164,7 @@ public class UserSqlProvider {
 		sql.SET("province = #{record.province,jdbcType=VARCHAR}");
 		sql.SET("city = #{record.city,jdbcType=VARCHAR}");
 		sql.SET("language = #{record.language,jdbcType=VARCHAR}");
+		sql.SET("addtime = #{record.addtime,jdbcType=TIMESTAMP}");
 		UserExample example = (UserExample) parameter.get("example");
 		applyWhere(sql, example, true);
 		return sql.toString();
@@ -195,6 +203,9 @@ public class UserSqlProvider {
 		}
 		if (record.getLanguage() != null) {
 			sql.SET("language = #{language,jdbcType=VARCHAR}");
+		}
+		if (record.getAddtime() != null) {
+			sql.SET("addtime = #{addtime,jdbcType=TIMESTAMP}");
 		}
 		sql.WHERE("id = #{id,jdbcType=BIGINT}");
 		return sql.toString();
