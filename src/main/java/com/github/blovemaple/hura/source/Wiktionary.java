@@ -19,6 +19,8 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -96,7 +98,8 @@ public class Wiktionary implements VortaroSource {
 				.setParameter("titles", vorto);
 		builder.setCharset(Charset.forName("UTF-8"));
 		HttpGet get = new HttpGet(builder.build());
-		HttpClient http = HttpClients.createSystem();
+		HttpClient http = HttpClients.custom()
+				.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
 		HttpResponse response = http.execute(get);
 		return EntityUtils.toString(response.getEntity());
 	}
