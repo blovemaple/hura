@@ -7,4 +7,4 @@ mybatis:
 
 spring:
   profiles:
-    include: private
+    active: product
