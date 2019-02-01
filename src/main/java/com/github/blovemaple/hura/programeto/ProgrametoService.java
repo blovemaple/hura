@@ -1,5 +1,7 @@
 package com.github.blovemaple.hura.programeto;
 
+import static com.github.blovemaple.hura.source.VortaroSourceType.*;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
@@ -76,9 +78,13 @@ public class ProgrametoService {
 			SOURCES.stream().collect(
 					Collectors.toMap(source -> source.getClass().getSimpleName().toLowerCase(), source -> source));
 	private static final List<VortaroSection> VORTARO_SECTIONS = //
-			SOURCES.stream()
-					.map(source -> new VortaroSection(source.getClass().getSimpleName().toLowerCase(), source.name()))
-					.collect(Collectors.toList());
+			SOURCES.stream().map(source -> //
+			new VortaroSection( //
+					source.getClass().getSimpleName().toLowerCase(), //
+					source.name(), //
+					true, //
+					source.type() == TRADUKILO //
+			)).collect(Collectors.toList());
 
 	/**
 	 * 发送code登录，返回登录key。
