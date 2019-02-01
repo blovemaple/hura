@@ -71,8 +71,8 @@ public class ProgrametoService {
 	private static final List<VortaroSource> SOURCES = List.of( //
 			new Lemmatization(), //
 			new ChenVortaro(), new LernuVortaro(), //
-			new GoogleTranslate2(), //
-			new Wiktionary() //
+			new Wiktionary(), //
+			new GoogleTranslate2() //
 	);
 	private static final Map<String, VortaroSource> SOURCES_BY_KEY = //
 			SOURCES.stream().collect(
