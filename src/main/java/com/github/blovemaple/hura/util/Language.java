@@ -20,4 +20,8 @@ public enum Language {
 		}
 		return zhCount > eoCount ? CHINESE : ESPERANTO;
 	}
+
+	public static boolean isEsperantoWord(String str) {
+		return str.chars().allMatch(c -> isEsperanto((char) c));
+	}
 }

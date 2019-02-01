@@ -32,7 +32,7 @@ public class Lemmatization implements VortaroSource {
 
 		Lemmatization result = new Lemmatization(vorto);
 
-		if (Language.determine(vorto) != Language.ESPERANTO)
+		if (!Language.isEsperantoWord(vorto))
 			return result;
 
 		if (vorto.matches(".*\\s.*"))
