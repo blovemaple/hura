@@ -45,6 +45,10 @@ public class Piv implements VortaroSource {
 		return "PIV(vortaro.net)";
 	}
 
+	public static void main(String[] args) throws IOException {
+		System.out.println("CONTENT: " + new Piv().query("eliras"));
+	}
+
 	@Override
 	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
 		if (language != Language.ESPERANTO)
@@ -52,13 +56,46 @@ public class Piv implements VortaroSource {
 		if (!Language.isEsperantoWord(vorto))
 			return null;
 
-		// TODO
-		return null;
+		String rawHtml = queryRaw(vorto);
+		if (rawHtml == null)
+			return null;
 
-	}
+		Document root = Jsoup.parse(rawHtml);
+		System.out.println(root);
 
-	public static void main(String[] args) throws IOException {
-		System.out.println("CONTENT: " + new Piv().queryRaw("iu"));
+		// 查找id=ow的节点中的单词原型
+		String targetWord = vorto;
+		Element OwElement = root.getElementById("ow");
+		if (OwElement != null) {
+			targetWord = OwElement.attr("data-origin");
+		}
+
+		// 找到所有"article"节点
+		Elements articleElements = root.getElementsByClass("article");
+
+		StringBuilder resultString = new StringBuilder();
+		for (Element articleElement : articleElements) {
+			System.out.println("ARTICLE:");
+			System.out.println(articleElement);
+
+			// 先按照targetWord精确查找dfn节点
+			Elements targetElements = articleElement.getElementsByClass(targetWord);
+			Element contentElement;
+			if (!targetElements.isEmpty()) {
+				// 找到了精确的dfn节点，将父节点作为内容节点
+				contentElement = targetElements.get(0).parent();
+			} else {
+				// 没有找到精确的dfn节点，以第一个单词（非derivo单词）的节点作为内容节点
+				contentElement = articleElement;
+			}
+
+			System.out.println("CONTENT:");
+			System.out.println(contentElement);
+
+			resultNodeToString(contentElement, resultString);
+		}
+
+		return List.of(new VortaroSourceResult(resultString.toString()));
 	}
 
 	public String queryRaw(String vorto) throws IOException {
@@ -85,16 +122,19 @@ public class Piv implements VortaroSource {
 		}
 
 		HttpResponse response = http.execute(get, httpContext);
-		String responseStr = EntityUtils.toString(response.getEntity());
+		String rawHtml = EntityUtils.toString(response.getEntity());
 
-		Document root = Jsoup.parse(responseStr);
+		Document root = Jsoup.parse(rawHtml);
+		System.out.println(root);
+
+		// 找到所有"article"节点
 		Elements articleElements = root.getElementsByClass("article");
 		if (articleElements.isEmpty()) {
 			Elements errorsElements = root.getElementsByClass("errors");
 			if (errorsElements.html().contains("Okazis iu eraro")) {
 				// token非法，刷新token后重试
 				refreshToken();
-				queryRaw(vorto, currentRetry + 1);
+				return queryRaw(vorto, currentRetry + 1);
 			} else if (errorsElements.html().contains("ne estis sukcesa")) {
 				// 没有查询结果
 				return null;
@@ -104,26 +144,11 @@ public class Piv implements VortaroSource {
 				return null;
 			}
 		}
-
-		Element articleElement = articleElements.get(0).child(0);
-
-		// 先按照vorto精确查找dfn节点
-		Elements targetElements = articleElement.getElementsByClass(vorto);
-		Element contentElement;
-		if (!targetElements.isEmpty()) {
-			// 找到了精确的dfn节点，将父节点作为内容节点
-			contentElement = targetElements.get(0).parent();
-		} else {
-			// 没有找到精确的dfn节点，以第一个单词（非derivo单词）的节点作为内容节点
-			contentElement = articleElement.child(0);
-		}
-
-		StringBuilder resultString = new StringBuilder();
-		convertResult(contentElement, resultString);
-		return resultString.toString();
+		
+		return rawHtml;
 	}
 
-	private void convertResult(Node node, StringBuilder resultString) {
+	private void resultNodeToString(Node node, StringBuilder resultString) {
 		if (node instanceof Element) {
 			// div节点前换行
 			if (resultString.length() > 0 && ((Element) node).tagName().equals("div"))
@@ -162,7 +187,7 @@ public class Piv implements VortaroSource {
 				}
 
 				// 递归子节点
-				convertResult(child, resultString);
+				resultNodeToString(child, resultString);
 
 				// <b>纯数字标签后加点
 				if (child instanceof Element && ((Element) child).tagName().equals("b")
