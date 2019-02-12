@@ -12,4 +12,5 @@
 
 private.properties
 google-credentials.json
-application-private.properties
+application-product.properties
+application-test.properties
