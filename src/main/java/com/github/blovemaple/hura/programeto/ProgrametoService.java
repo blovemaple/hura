@@ -1,6 +1,7 @@
 package com.github.blovemaple.hura.programeto;
 
-import static com.github.blovemaple.hura.source.VortaroSourceType.*;
+import static com.github.blovemaple.hura.source.VortaroSourceType.TRADUKILO;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.Date;
@@ -32,6 +33,7 @@ import com.github.blovemaple.hura.dal.UserMapper;
 import com.github.blovemaple.hura.source.ChenVortaro;
 import com.github.blovemaple.hura.source.GoogleTranslate2;
 import com.github.blovemaple.hura.source.LernuVortaro;
+import com.github.blovemaple.hura.source.Piv;
 import com.github.blovemaple.hura.source.VortaroSource;
 import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.source.Wiktionary;
@@ -72,6 +74,7 @@ public class ProgrametoService {
 			new Lemmatization(), //
 			new ChenVortaro(), new LernuVortaro(), //
 			new Wiktionary(), //
+			new Piv(), //
 			new GoogleTranslate2() //
 	);
 	private static final Map<String, VortaroSource> SOURCES_BY_KEY = //
@@ -110,7 +113,8 @@ public class ProgrametoService {
 			res.setErrcode(WXCode2SessionResponse.ERRCODE_SUCCESS);
 		switch (res.getErrcode()) {
 		case WXCode2SessionResponse.ERRCODE_SUCCESS:
-			LoginResponse response = LoginResponse.success(login(res), conf(res.getUnionid()));
+			LoginResponse response = LoginResponse.success(login(res),
+					conf(res.getUnionid(), request.getHuraVersion()));
 
 			saveUser(request.getUserInfo(), res);
 
@@ -137,9 +141,13 @@ public class ProgrametoService {
 		return loginKey;
 	}
 
-	private UserConf conf(String unionid) {
+	private UserConf conf(String unionid, int huraVersion) {
 		UserConf conf = new UserConf();
-		conf.setVortaroSections(VORTARO_SECTIONS);
+		if (huraVersion >= 10200)
+			conf.setVortaroSections(VORTARO_SECTIONS);
+		else
+			conf.setVortaroSections(
+					VORTARO_SECTIONS.stream().filter(section -> !section.getKey().equals("piv")).collect(toList()));
 		return conf;
 	}
 

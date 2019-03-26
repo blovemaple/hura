@@ -11,6 +11,8 @@ public class LoginRequest {
 	@NotNull
 	private WxUserInfo userInfo;
 
+	private Integer huraVersion = 10100;
+
 	public String getLoginCode() {
 		return loginCode;
 	}
@@ -25,6 +27,14 @@ public class LoginRequest {
 
 	public void setUserInfo(WxUserInfo userInfo) {
 		this.userInfo = userInfo;
+	}
+
+	public Integer getHuraVersion() {
+		return huraVersion;
+	}
+
+	public void setHuraVersion(Integer huraVersion) {
+		this.huraVersion = huraVersion;
 	}
 
 }
