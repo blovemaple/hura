@@ -31,6 +31,27 @@ public interface VortaroSource {
 	}
 
 	/**
+	 * 是否有详细解释。
+	 */
+	default boolean hasDetail() {
+		return false;
+	}
+
+	/**
+	 * 查询单词解释。
+	 * 
+	 * @param vorto
+	 *            单词
+	 * @param isDetail
+	 *            是否查询详细解释
+	 * @return 若干条结果
+	 * @throws IOException
+	 */
+	default List<VortaroSourceResult> query(String vorto, boolean isDetail) throws IOException {
+		return isDetail ? queryDetail(vorto) : query(vorto);
+	}
+
+	/**
 	 * 查询单词解释。
 	 * 
 	 * @param vorto
@@ -41,7 +62,19 @@ public interface VortaroSource {
 	default List<VortaroSourceResult> query(String vorto) throws IOException {
 		return query(vorto, Language.determine(vorto));
 	}
-	
+
+	/**
+	 * 查询单词详细解释。
+	 * 
+	 * @param vorto
+	 *            单词
+	 * @return 若干条结果
+	 * @throws IOException
+	 */
+	default List<VortaroSourceResult> queryDetail(String vorto) throws IOException {
+		return queryDetail(vorto, Language.determine(vorto));
+	}
+
 	/**
 	 * 查询单词解释（指定语言）。
 	 * 
@@ -53,6 +86,20 @@ public interface VortaroSource {
 	 * @throws IOException
 	 */
 	List<VortaroSourceResult> query(String vorto, Language language) throws IOException;
+
+	/**
+	 * 查询单词详细解释（指定语言）。默认调用query。
+	 * 
+	 * @param vorto
+	 *            单词
+	 * @param language
+	 *            语言
+	 * @return 若干条结果
+	 * @throws IOException
+	 */
+	default List<VortaroSourceResult> queryDetail(String vorto, Language language) throws IOException {
+		return query(vorto, language);
+	}
 
 	/**
 	 * 查询单词解释。出现异常时仅打印不抛出，返回没有结果。

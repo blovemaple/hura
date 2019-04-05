@@ -86,7 +86,8 @@ public class ProgrametoService {
 					source.getClass().getSimpleName().toLowerCase(), //
 					source.name(), //
 					true, //
-					source.type() == TRADUKILO //
+					source.type() == TRADUKILO, //
+					source.hasDetail() //
 			)).collect(Collectors.toList());
 
 	/**
@@ -195,13 +196,19 @@ public class ProgrametoService {
 	/**
 	 * 查询一个词典的结果。
 	 * 
+	 * @param loginKey
+	 * @param query
+	 * @param sectionKey
+	 * @param isDetail
+	 * 
 	 * @throws InvalidLoginKeyException
 	 * @throws InvalidSectionKeyException
 	 * @throws IOException
 	 */
 	@RequestMapping("/query")
 	public QueryResponse query(@RequestParam("loginkey") String loginKey, @RequestParam("query") String query,
-			@RequestParam("sectionkey") String sectionKey)
+			@RequestParam("sectionkey") String sectionKey,
+			@RequestParam(value = "isdetail", defaultValue = "false") boolean isDetail)
 			throws InvalidLoginKeyException, InvalidSectionKeyException, IOException {
 		long startTime = System.currentTimeMillis();
 
@@ -220,10 +227,10 @@ public class ProgrametoService {
 		}
 
 		// 先查query，query没查到再查原型
-		List<VortaroSourceResult> sourceResults = source.query(formatQuery);
+		List<VortaroSourceResult> sourceResults = source.query(formatQuery, isDetail);
 		if (sourceResults == null || sourceResults.isEmpty())
 			if (!baseForm.equals(formatQuery))
-				sourceResults = source.query(baseForm);
+				sourceResults = source.query(baseForm, isDetail);
 
 		if (sourceResults == null)
 			sourceResults = List.of();
@@ -235,6 +242,7 @@ public class ProgrametoService {
 		log.setUnionid(loginInfo.getUnionid());
 		log.setQuery(query);
 		log.setSectionKey(sectionKey);
+		log.setIsDetail(isDetail);
 		log.setHasResult(!sourceResults.isEmpty());
 		log.setResult(jackson.writeValueAsString(sourceResults));
 		queryLogMapper.insertSelective(log);

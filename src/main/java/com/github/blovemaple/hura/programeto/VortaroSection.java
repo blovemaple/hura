@@ -5,12 +5,14 @@ public class VortaroSection {
 	private String name;
 	private boolean canCopy;
 	private boolean canLookup;
+	private boolean hasDetail;
 
-	public VortaroSection(String key, String name, boolean canCopy, boolean canLookup) {
+	public VortaroSection(String key, String name, boolean canCopy, boolean canLookup, boolean hasDetail) {
 		this.key = key;
 		this.name = name;
 		this.canCopy = canCopy;
 		this.canLookup = canLookup;
+		this.hasDetail = hasDetail;
 	}
 
 	public String getKey() {
@@ -43,6 +45,14 @@ public class VortaroSection {
 
 	public void setCanLookup(boolean canLookup) {
 		this.canLookup = canLookup;
+	}
+
+	public boolean isHasDetail() {
+		return hasDetail;
+	}
+
+	public void setHasDetail(boolean hasDetail) {
+		this.hasDetail = hasDetail;
 	}
 
 }

@@ -45,6 +45,7 @@ CREATE TABLE `hura`.`programeto_query_log` (
   `unionid` varchar(63) NOT NULL DEFAULT '',
   `query` varchar(1024) NOT NULL,
   `section_key` varchar(31) NOT NULL,
+  `is_detail` tinyint(1) NOT NULL DEFAULT 0,
   `has_result` tinyint(1) NOT NULL,
   `result` text NOT NULL,
   PRIMARY KEY (`id`)

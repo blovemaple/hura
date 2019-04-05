@@ -623,6 +623,66 @@ public class ProgrametoQueryLogExample {
 			return (Criteria) this;
 		}
 
+		public Criteria andIsDetailIsNull() {
+			addCriterion("is_detail is null");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailIsNotNull() {
+			addCriterion("is_detail is not null");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailEqualTo(Boolean value) {
+			addCriterion("is_detail =", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailNotEqualTo(Boolean value) {
+			addCriterion("is_detail <>", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailGreaterThan(Boolean value) {
+			addCriterion("is_detail >", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailGreaterThanOrEqualTo(Boolean value) {
+			addCriterion("is_detail >=", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailLessThan(Boolean value) {
+			addCriterion("is_detail <", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailLessThanOrEqualTo(Boolean value) {
+			addCriterion("is_detail <=", value, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailIn(List<Boolean> values) {
+			addCriterion("is_detail in", values, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailNotIn(List<Boolean> values) {
+			addCriterion("is_detail not in", values, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailBetween(Boolean value1, Boolean value2) {
+			addCriterion("is_detail between", value1, value2, "isDetail");
+			return (Criteria) this;
+		}
+
+		public Criteria andIsDetailNotBetween(Boolean value1, Boolean value2) {
+			addCriterion("is_detail not between", value1, value2, "isDetail");
+			return (Criteria) this;
+		}
+
 		public Criteria andHasResultIsNull() {
 			addCriterion("has_result is null");
 			return (Criteria) this;

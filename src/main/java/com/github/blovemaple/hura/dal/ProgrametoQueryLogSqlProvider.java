@@ -57,6 +57,9 @@ public class ProgrametoQueryLogSqlProvider {
 		if (record.getSectionKey() != null) {
 			sql.VALUES("section_key", "#{sectionKey,jdbcType=VARCHAR}");
 		}
+		if (record.getIsDetail() != null) {
+			sql.VALUES("is_detail", "#{isDetail,jdbcType=BIT}");
+		}
 		if (record.getHasResult() != null) {
 			sql.VALUES("has_result", "#{hasResult,jdbcType=BIT}");
 		}
@@ -83,6 +86,7 @@ public class ProgrametoQueryLogSqlProvider {
 		sql.SELECT("unionid");
 		sql.SELECT("query");
 		sql.SELECT("section_key");
+		sql.SELECT("is_detail");
 		sql.SELECT("has_result");
 		sql.SELECT("result");
 		sql.FROM("programeto_query_log");
@@ -123,6 +127,9 @@ public class ProgrametoQueryLogSqlProvider {
 		if (record.getSectionKey() != null) {
 			sql.SET("section_key = #{record.sectionKey,jdbcType=VARCHAR}");
 		}
+		if (record.getIsDetail() != null) {
+			sql.SET("is_detail = #{record.isDetail,jdbcType=BIT}");
+		}
 		if (record.getHasResult() != null) {
 			sql.SET("has_result = #{record.hasResult,jdbcType=BIT}");
 		}
@@ -147,6 +154,7 @@ public class ProgrametoQueryLogSqlProvider {
 		sql.SET("unionid = #{record.unionid,jdbcType=VARCHAR}");
 		sql.SET("query = #{record.query,jdbcType=VARCHAR}");
 		sql.SET("section_key = #{record.sectionKey,jdbcType=VARCHAR}");
+		sql.SET("is_detail = #{record.isDetail,jdbcType=BIT}");
 		sql.SET("has_result = #{record.hasResult,jdbcType=BIT}");
 		sql.SET("result = #{record.result,jdbcType=VARCHAR}");
 		ProgrametoQueryLogExample example = (ProgrametoQueryLogExample) parameter.get("example");
@@ -178,6 +186,9 @@ public class ProgrametoQueryLogSqlProvider {
 		}
 		if (record.getSectionKey() != null) {
 			sql.SET("section_key = #{sectionKey,jdbcType=VARCHAR}");
+		}
+		if (record.getIsDetail() != null) {
+			sql.SET("is_detail = #{isDetail,jdbcType=BIT}");
 		}
 		if (record.getHasResult() != null) {
 			sql.SET("has_result = #{hasResult,jdbcType=BIT}");

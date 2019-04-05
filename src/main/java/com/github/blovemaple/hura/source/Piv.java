@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -45,39 +46,57 @@ public class Piv implements VortaroSource {
 		return "PIV(vortaro.net)";
 	}
 
+	@Override
+	public boolean hasDetail() {
+		return true;
+	}
+
 	public static void main(String[] args) throws IOException {
-		System.out.println("CONTENT: " + new Piv().query("eliras"));
+		System.out.println("CONTENT: " + new Piv().queryDetail("bati"));
 	}
 
 	@Override
 	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
+		StringBuilder resultString = new StringBuilder();
+		contentElements(vorto, language).forEach(e -> resultNodeToString(e, resultString, 0));
+		if (resultString.length() == 0)
+			return null;
+		return List.of(new VortaroSourceResult(resultString.toString()));
+	}
+
+	@Override
+	public List<VortaroSourceResult> queryDetail(String vorto, Language language) throws IOException {
+		StringBuilder resultString = new StringBuilder();
+		contentElements(vorto, language).forEach(e -> e.html(resultString));
+		if (resultString.length() == 0)
+			return null;
+		return List.of(new VortaroSourceResult(resultString.toString()));
+	}
+
+	private Stream<Element> contentElements(String vorto, Language language) throws IOException{
 		if (language != Language.ESPERANTO)
-			return null;
+			return Stream.empty();
 		if (!Language.isEsperantoWord(vorto))
-			return null;
+			return Stream.empty();
 
 		String rawHtml = queryRaw(vorto);
 		if (rawHtml == null)
-			return null;
+			return Stream.empty();
 
 		Document root = Jsoup.parse(rawHtml);
-		System.out.println(root);
 
 		// 查找id=ow的节点中的单词原型
-		String targetWord = vorto;
+		String targetWord;
 		Element OwElement = root.getElementById("ow");
-		if (OwElement != null) {
+		if (OwElement != null)
 			targetWord = OwElement.attr("data-origin");
-		}
+		else
+			targetWord = vorto;
 
 		// 找到所有"article"节点
 		Elements articleElements = root.getElementsByClass("article");
 
-		StringBuilder resultString = new StringBuilder();
-		for (Element articleElement : articleElements) {
-			System.out.println("ARTICLE:");
-			System.out.println(articleElement);
-
+		return articleElements.stream().map(articleElement->{
 			// 先按照targetWord精确查找dfn节点
 			Elements targetElements = articleElement.getElementsByClass(targetWord);
 			Element contentElement;
@@ -88,14 +107,8 @@ public class Piv implements VortaroSource {
 				// 没有找到精确的dfn节点，以第一个单词（非derivo单词）的节点作为内容节点
 				contentElement = articleElement;
 			}
-
-			System.out.println("CONTENT:");
-			System.out.println(contentElement);
-
-			resultNodeToString(contentElement, resultString);
-		}
-
-		return List.of(new VortaroSourceResult(resultString.toString()));
+			return contentElement;
+		});
 	}
 
 	public String queryRaw(String vorto) throws IOException {
@@ -125,7 +138,6 @@ public class Piv implements VortaroSource {
 		String rawHtml = EntityUtils.toString(response.getEntity());
 
 		Document root = Jsoup.parse(rawHtml);
-		System.out.println(root);
 
 		// 找到所有"article"节点
 		Elements articleElements = root.getElementsByClass("article");
@@ -148,7 +160,14 @@ public class Piv implements VortaroSource {
 		return rawHtml;
 	}
 
-	private void resultNodeToString(Node node, StringBuilder resultString) {
+	/**
+	 * @param node
+	 * @param resultString
+	 * @param difinogrupoDepth
+	 *            有时候deviro会存在于单词本身的解释里，这种情况下貌似都会在difinogrupoDepth节点下。<br>
+	 *            因此用这个变量表示目前的difinogrupoDepth节点层级，如果>1说明在difinogrupoDepth节点下，就不过滤deviro。
+	 */
+	private void resultNodeToString(Node node, StringBuilder resultString, int difinogrupoDepth) {
 		if (node instanceof Element) {
 			// div节点前换行
 			if (resultString.length() > 0 && ((Element) node).tagName().equals("div"))
@@ -157,7 +176,7 @@ public class Piv implements VortaroSource {
 			// 循环递归子节点
 			for (Node child : node.childNodes()) {
 				// 排除衍生单词节点
-				if (child instanceof Element && ((Element) child).hasClass("derivo"))
+				if (difinogrupoDepth == 0 && child instanceof Element && ((Element) child).hasClass("derivo"))
 					continue;
 
 				// 排除上标节点
@@ -169,7 +188,8 @@ public class Piv implements VortaroSource {
 					break;
 
 				// 排除斜体之后的部分（斜体表示详细解释或者举例）
-				if (child instanceof Element && ((Element) child).tagName().equals("i")) {
+				if (resultString.lastIndexOf("(") <= resultString.lastIndexOf(")") // 没有在括号里
+						&& child instanceof Element && ((Element) child).tagName().equals("i")) {
 					// 因去掉了斜体部分，把末尾的冒号换成句号，如果没有句号就加句号
 					for (int i = resultString.length() - 1; i >= 0; i--) {
 						if (resultString.charAt(i) == ' ')
@@ -187,7 +207,11 @@ public class Piv implements VortaroSource {
 				}
 
 				// 递归子节点
-				resultNodeToString(child, resultString);
+				int childDifinogrupoDepth = difinogrupoDepth;
+				if (child instanceof Element && ((Element) child).hasClass("difinogrupo")) {
+					childDifinogrupoDepth++;
+				}
+				resultNodeToString(child, resultString, childDifinogrupoDepth);
 
 				// <b>纯数字标签后加点
 				if (child instanceof Element && ((Element) child).tagName().equals("b")
