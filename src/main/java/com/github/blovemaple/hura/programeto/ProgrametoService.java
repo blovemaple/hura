@@ -244,7 +244,8 @@ public class ProgrametoService {
 		log.setSectionKey(sectionKey);
 		log.setIsDetail(isDetail);
 		log.setHasResult(!sourceResults.isEmpty());
-		log.setResult(jackson.writeValueAsString(sourceResults));
+		// 查询详细内容不记录result，PIV的详细内容html太长了（可能有几百K）
+		log.setResult(isDetail ? "" : jackson.writeValueAsString(sourceResults));
 		queryLogMapper.insertSelective(log);
 
 		return new QueryResponse(sourceResults);

@@ -26,6 +26,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.blovemaple.hura.util.CssInliner;
 import com.github.blovemaple.hura.util.Language;
 
 /**
@@ -40,6 +41,7 @@ public class Piv implements VortaroSource {
 	HttpClient http = HttpClients.custom()
 			.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
 	private String token;
+	private String css;
 
 	@Override
 	public String name() {
@@ -52,7 +54,9 @@ public class Piv implements VortaroSource {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println("CONTENT: " + new Piv().queryDetail("bati"));
+		System.out.println("CONTENT: " + new Piv().query("vorto"));
+		// Files.writeString(Paths.get("E:\\out.html"), new
+		// Piv().queryDetail("vortaro").get(0).getContent());
 	}
 
 	@Override
@@ -66,14 +70,27 @@ public class Piv implements VortaroSource {
 
 	@Override
 	public List<VortaroSourceResult> queryDetail(String vorto, Language language) throws IOException {
-		StringBuilder resultString = new StringBuilder();
-		contentElements(vorto, language).forEach(e -> e.html(resultString));
-		if (resultString.length() == 0)
+		StringBuilder originalHtml = new StringBuilder();
+		originalHtml.append(
+				"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body>");
+
+		// contentElements(vorto, language).forEach(e -> e.html(originalHtml));
+		contentElements(vorto, language).forEach(e -> originalHtml.append(e.outerHtml()));
+		if (originalHtml.length() == 0)
 			return null;
-		return List.of(new VortaroSourceResult(resultString.toString()));
+
+		originalHtml.append("</body></html>");
+
+		String resultHtml = CssInliner.inlineCss(originalHtml.toString(), getCss());
+
+		return List.of(new VortaroSourceResult(resultHtml));
 	}
 
-	private Stream<Element> contentElements(String vorto, Language language) throws IOException{
+	/**
+	 * 查询并获取指定单词释义的html节点。<br>
+	 * 因为查出来的html中，查的那个单词有可能属于派生单词（见下注释），所以这时候需要只保留它自己的节点。
+	 */
+	private Stream<Element> contentElements(String vorto, Language language) throws IOException {
 		if (language != Language.ESPERANTO)
 			return Stream.empty();
 		if (!Language.isEsperantoWord(vorto))
@@ -96,18 +113,31 @@ public class Piv implements VortaroSource {
 		// 找到所有"article"节点
 		Elements articleElements = root.getElementsByClass("article");
 
-		return articleElements.stream().map(articleElement->{
+		// article的节点结构是（这里写的都是class）：
+		// article
+		// -- article_content_xxxx
+		// ---- <单词>（dfn节点，第一个单词，不一定是查的那一个，有可能在派生单词里）
+		// ---- signifonuanco*
+		// ---- derivo*
+		// ------ <单词>（dfn节点，派生单词）
+		// ------ signifonuanco*
+
+		// 首先按targetWord找到dfn节点，
+		// 如果是第一个单词则取整个article节点，
+		// 如果是派生单词，则只保留article、article_content_xxxx、对应的derivo节点
+
+		return articleElements.stream().map(articleElement -> {
 			// 先按照targetWord精确查找dfn节点
-			Elements targetElements = articleElement.getElementsByClass(targetWord);
-			Element contentElement;
-			if (!targetElements.isEmpty()) {
-				// 找到了精确的dfn节点，将父节点作为内容节点
-				contentElement = targetElements.get(0).parent();
-			} else {
-				// 没有找到精确的dfn节点，以第一个单词（非derivo单词）的节点作为内容节点
-				contentElement = articleElement;
+			Elements targetDfnElements = articleElement.getElementsByClass(targetWord);
+			if (!targetDfnElements.isEmpty()) {
+				// 找到了精确的dfn节点，判断是不是派生单词（在derivo节点下）
+				Element dfnElement = targetDfnElements.first();
+				if (dfnElement.parent().hasClass("derivo")) {
+					// 是派生单词，去掉对应的derivo节点的所有sibling节点
+					dfnElement.parent().siblingElements().forEach(Element::remove);
+				}
 			}
-			return contentElement;
+			return articleElement;
 		});
 	}
 
@@ -156,7 +186,7 @@ public class Piv implements VortaroSource {
 				return null;
 			}
 		}
-		
+
 		return rawHtml;
 	}
 
@@ -164,8 +194,8 @@ public class Piv implements VortaroSource {
 	 * @param node
 	 * @param resultString
 	 * @param difinogrupoDepth
-	 *            有时候deviro会存在于单词本身的解释里，这种情况下貌似都会在difinogrupoDepth节点下。<br>
-	 *            因此用这个变量表示目前的difinogrupoDepth节点层级，如果>1说明在difinogrupoDepth节点下，就不过滤deviro。
+	 *            有时候单词本身的解释里会有derivo节点，这种情况下貌似都会在difinogrupo节点下。<br>
+	 *            因此用这个变量表示目前的difinogrupo节点层级，如果>1说明在difinogrupo节点下，就不过滤deviro。
 	 */
 	private void resultNodeToString(Node node, StringBuilder resultString, int difinogrupoDepth) {
 		if (node instanceof Element) {
@@ -175,9 +205,11 @@ public class Piv implements VortaroSource {
 
 			// 循环递归子节点
 			for (Node child : node.childNodes()) {
-				// 排除衍生单词节点
-				if (difinogrupoDepth == 0 && child instanceof Element && ((Element) child).hasClass("derivo"))
-					continue;
+				// 排除有siblings的衍生单词节点（没有siblings说明是被选出来的目标节点）
+				if (difinogrupoDepth == 0 && child instanceof Element && ((Element) child).hasClass("derivo")) {
+					if (!((Element) child).siblingElements().isEmpty())
+						continue;
+				}
 
 				// 排除上标节点
 				if (child instanceof Element && ((Element) child).tagName().equals("sup"))
@@ -262,6 +294,28 @@ public class Piv implements VortaroSource {
 			logger.info("Refresh token success, token=" + this.token);
 			return token;
 		}
+	}
+
+	private String getCss() throws IOException {
+		return css == null ? refreshCss() : css;
+	}
+
+	private synchronized String refreshCss() throws IOException {
+		if (css != null)
+			return css;
+
+		HttpGet get;
+		try {
+			URIBuilder builder = new URIBuilder("http://vortaro.net/css/common.css");
+			get = new HttpGet(builder.build());
+		} catch (URISyntaxException e) {
+			// impossible
+			throw new RuntimeException(e);
+		}
+
+		HttpResponse response = http.execute(get, httpContext);
+		css = EntityUtils.toString(response.getEntity());
+		return css;
 	}
 
 }
