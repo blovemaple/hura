@@ -184,10 +184,11 @@ public class ProgrametoService {
 	 * @return
 	 */
 	@RequestMapping("/validatelogin")
-	public ValidateLoginResponse validateLogin(@RequestParam("loginkey") String loginKey) {
+	public ValidateLoginResponse validateLogin(@RequestParam("loginkey") String loginKey,
+			@RequestParam(value = "huraversion", defaultValue = "10100") int huraVersion) {
 		try {
-			validateLogin0(loginKey);
-			return ValidateLoginResponse.success();
+			LoginInfo loginInfo = validateLogin0(loginKey);
+			return ValidateLoginResponse.success(conf(loginInfo.getUnionid(), huraVersion));
 		} catch (InvalidLoginKeyException e) {
 			return ValidateLoginResponse.failed();
 		}
