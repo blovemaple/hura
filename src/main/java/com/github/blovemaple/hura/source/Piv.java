@@ -54,7 +54,7 @@ public class Piv implements VortaroSource {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println("CONTENT: " + new Piv().query("vorto"));
+		System.out.println("CONTENT: " + new Piv().query("lernado"));
 		// Files.writeString(Paths.get("E:\\out.html"), new
 		// Piv().queryDetail("vortaro").get(0).getContent());
 	}
@@ -134,7 +134,7 @@ public class Piv implements VortaroSource {
 				Element dfnElement = targetDfnElements.first();
 				if (dfnElement.parent().hasClass("derivo")) {
 					// 是派生单词，去掉对应的derivo节点的所有sibling节点
-					dfnElement.parent().siblingElements().forEach(Element::remove);
+					dfnElement.parent().siblingNodes().forEach(Node::remove);
 				}
 			}
 			return articleElement;
