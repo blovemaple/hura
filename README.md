@@ -9,5 +9,7 @@ Servo de WeChat abonkonto Hura, servo de Esperanta vortaro.
 
 <br><br><br>
 TODOs：
-* 小程序接入PIV词典
+* 增加单词发音
+* 单词输入过程中给出建议
+* 错误单词给出建议
 * 拆分复合词
