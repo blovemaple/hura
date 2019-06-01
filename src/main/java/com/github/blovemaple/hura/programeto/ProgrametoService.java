@@ -1,7 +1,6 @@
 package com.github.blovemaple.hura.programeto;
 
 import static com.github.blovemaple.hura.source.VortaroSourceType.TRADUKILO;
-import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.Date;
@@ -11,14 +10,22 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,6 +35,8 @@ import com.github.blovemaple.hura.dal.ProgrametoLoginLogMapper;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLog;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLogMapper;
 import com.github.blovemaple.hura.dal.User;
+import com.github.blovemaple.hura.dal.UserConfig;
+import com.github.blovemaple.hura.dal.UserConfigMapper;
 import com.github.blovemaple.hura.dal.UserExample;
 import com.github.blovemaple.hura.dal.UserMapper;
 import com.github.blovemaple.hura.source.ChenVortaro;
@@ -39,6 +48,9 @@ import com.github.blovemaple.hura.source.VortaroSourceResult;
 import com.github.blovemaple.hura.source.Wiktionary;
 import com.github.blovemaple.hura.util.MyUtils;
 import com.github.blovemaple.hura.util.PrivateConf;
+import com.github.blovemaple.hura.vortlisto.VortlistoModel;
+import com.github.blovemaple.hura.vortlisto.VortlistoService;
+import com.github.blovemaple.hura.vortlisto.VortlistoVortoModel;
 import com.github.blovemaple.hura.vorto.Lemmatization;
 
 import retrofit2.Response;
@@ -61,6 +73,10 @@ public class ProgrametoService {
 	private ProgrametoQueryLogMapper queryLogMapper;
 	@Autowired
 	private UserMapper userMapper;
+	@Autowired
+	private UserConfigMapper userConfigMapper;
+	@Autowired
+	private VortlistoService vortlistoService;
 
 	private WXSnsService wxService = WXSnsService.create();
 	private ObjectMapper jackson = new ObjectMapper();
@@ -99,6 +115,7 @@ public class ProgrametoService {
 	 * @throws IOException
 	 */
 	@RequestMapping(value = "/login", method = RequestMethod.POST)
+	@Transactional
 	public LoginResponse login(@RequestBody LoginRequest request) throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
 		Response<WXCode2SessionResponse> httpRes = wxService.jscode2session(privateConf.getWxProgrametoAppid(),
@@ -114,8 +131,7 @@ public class ProgrametoService {
 			res.setErrcode(WXCode2SessionResponse.ERRCODE_SUCCESS);
 		switch (res.getErrcode()) {
 		case WXCode2SessionResponse.ERRCODE_SUCCESS:
-			LoginResponse response = LoginResponse.success(login(res),
-					conf(res.getUnionid(), request.getHuraVersion()));
+			LoginResponse response = LoginResponse.success(login(res), conf(res));
 
 			saveUser(request.getUserInfo(), res);
 
@@ -142,14 +158,31 @@ public class ProgrametoService {
 		return loginKey;
 	}
 
-	private UserConf conf(String unionid, int huraVersion) {
-		UserConf conf = new UserConf();
-		if (huraVersion >= 10200)
-			conf.setVortaroSections(VORTARO_SECTIONS);
-		else
-			conf.setVortaroSections(
-					VORTARO_SECTIONS.stream().filter(section -> !section.getKey().equals("piv")).collect(toList()));
+	private UserConfigModel conf(LoginInfo loginInfo) {
+		UserConfig config = userConfigMapper.selectByPrimaryKey(loginInfo.getOpenid());
+		if (config == null) {
+			config = initConfig(loginInfo.getOpenid());
+		}
+
+		UserConfigModel conf = new UserConfigModel(config,  VORTARO_SECTIONS);
+
+		if (conf.getDefVortlistoId() == null) {
+			conf.setDefVortlistoId(getDefaultVortlistoId(loginInfo));
+		}
+
 		return conf;
+	}
+
+	private UserConfig initConfig(String openid) {
+		UserConfig config = new UserConfig();
+		config.setOpenid(openid);
+		config.setDefVortlistoId(null);
+		config.setShowQueryHistory(true);
+		config.setHideSectionKeys(List.of());
+		config.setModtime(new Date());
+
+		userConfigMapper.insert(config);
+		return config;
 	}
 
 	private void saveUser(WxUserInfo userInfo, LoginInfo loginInfo) {
@@ -188,10 +221,24 @@ public class ProgrametoService {
 			@RequestParam(value = "huraversion", defaultValue = "10100") int huraVersion) {
 		try {
 			LoginInfo loginInfo = validateLogin0(loginKey);
-			return ValidateLoginResponse.success(conf(loginInfo.getUnionid(), huraVersion));
+			return ValidateLoginResponse.success(conf(loginInfo));
 		} catch (InvalidLoginKeyException e) {
 			return ValidateLoginResponse.failed();
 		}
+	}
+
+	@RequestMapping(value = "/conf", method = RequestMethod.PATCH)
+	@Transactional
+	public UserConfigModel modConfig(@RequestParam("loginkey") String loginKey,
+			@RequestBody UserConfigModel configModel) throws InvalidLoginKeyException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+
+		UserConfig config = configModel.toConfig();
+		config.setOpenid(loginInfo.getOpenid());
+		config.setModtime(new Date());
+		userConfigMapper.updateByPrimaryKeySelective(config);
+
+		return conf(loginInfo);
 	}
 
 	/**
@@ -252,6 +299,126 @@ public class ProgrametoService {
 		return new QueryResponse(sourceResults);
 	}
 
+	private VortaroSource validateSectionKey(String sectionKey) throws InvalidSectionKeyException {
+		if (sectionKey == null)
+			throw new InvalidSectionKeyException();
+		VortaroSource source = SOURCES_BY_KEY.get(sectionKey);
+		if (source == null)
+			throw new InvalidSectionKeyException();
+		return source;
+	}
+
+	@RequestMapping(value = "/vortlistoj", method = RequestMethod.GET)
+	public GetVortlistojResponse getVortlistoj(@RequestParam("loginkey") String loginKey)
+			throws InvalidLoginKeyException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		List<VortlistoModel> vortlistoj = vortlistoService.getVortlistojByUser(loginInfo);
+		return new GetVortlistojResponse(vortlistoj);
+	}
+
+	@RequestMapping(value = "/vortlistoj", method = RequestMethod.POST)
+	@ResponseStatus(HttpStatus.CREATED)
+	public VortlistoModel addVortlisto(@RequestParam("loginkey") String loginKey, @RequestParam("name") String name)
+			throws InvalidLoginKeyException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		VortlistoModel listo = new VortlistoModel(name);
+		vortlistoService.addVortlisto(loginInfo, listo);
+		return listo;
+	}
+
+	@RequestMapping(value = "/vortlistoj/{id}", method = RequestMethod.PUT)
+	@Transactional
+	public VortlistoModel modVortlisto(@RequestParam("loginkey") String loginKey, @PathVariable Long id,
+			@RequestBody VortlistoModel vortlisto) throws InvalidLoginKeyException, VortlistoNotExistException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		validateVortlisto(loginInfo, id);
+
+		vortlisto.setId(id);
+		VortlistoModel modifiedOne = vortlistoService.modVortlisto(loginInfo, vortlisto);
+		return modifiedOne;
+	}
+
+	@RequestMapping(value = "/vortlistoj/{id}", method = RequestMethod.DELETE)
+	@Transactional
+	public void delVortlisto(@RequestParam("loginkey") String loginKey, @PathVariable Long id)
+			throws InvalidLoginKeyException, VortlistoNotExistException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		validateVortlisto(loginInfo, id);
+
+		vortlistoService.delVortlisto(loginInfo, id);
+	}
+
+	@RequestMapping(value = "/vortlistoj/{vortlistoId}/vortoj", method = RequestMethod.GET)
+	public GetVortlistoVortojResponse getVortlistoVortoj(@RequestParam("loginkey") String loginKey,
+			@PathVariable Long vortlistoId) throws InvalidLoginKeyException, VortlistoNotExistException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		validateVortlisto(loginInfo, vortlistoId);
+
+		List<VortlistoVortoModel> vortoj = vortlistoService.getVortlistoVortojByListoId(loginInfo, vortlistoId);
+		return new GetVortlistoVortojResponse(vortoj);
+	}
+
+	@RequestMapping(value = "/vortlistoj/{vortlistoId}/vortoj/{vorto}", method = RequestMethod.PUT)
+	@Transactional
+	public ResponseEntity<VortlistoVortoModel> addVortlistVorto(@RequestParam("loginkey") String loginKey,
+			@PathVariable Long vortlistoId, @PathVariable String vorto, @RequestBody VortlistoVortoModel vortoModel)
+			throws InvalidLoginKeyException, VortlistoNotExistException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		if (vortlistoId == 0L) {
+			Long defVortlistoId = getDefaultVortlistoId(loginInfo);
+			if (defVortlistoId == null) {
+				throw new VortlistoNotExistException();
+			}
+			vortlistoId = defVortlistoId;
+		}
+		validateVortlisto(loginInfo, vortlistoId);
+		vortoModel.setVorto(vorto);
+
+		VortlistoVortoModel existed = vortlistoService.getVortlistoVorto(loginInfo, vortlistoId, vorto);
+		if (existed != null) {
+			VortlistoVortoModel modified = vortlistoService.modVortlistoVorto(loginInfo, vortoModel);
+			return new ResponseEntity<VortlistoVortoModel>(modified, HttpStatus.OK);
+		} else {
+			VortlistoVortoModel created = vortlistoService.addVortlistoVorto(loginInfo, vortoModel);
+			return new ResponseEntity<VortlistoVortoModel>(created, HttpStatus.CREATED);
+		}
+	}
+
+	@RequestMapping(value = "/vortlistoj/{vortlistoId}/vortoj/{vorto}", method = RequestMethod.DELETE)
+	@Transactional
+	public void delVortlistVorto(@RequestParam("loginkey") String loginKey, @PathVariable Long vortlistoId,
+			@PathVariable String vorto)
+			throws InvalidLoginKeyException, VortlistoNotExistException, VortlistoVortoNotExistException {
+		LoginInfo loginInfo = validateLogin0(loginKey);
+		validateVortlisto(loginInfo, vortlistoId);
+
+		VortlistoVortoModel vortoModel = vortlistoService.getVortlistoVorto(loginInfo, vortlistoId, vorto);
+		if (vortoModel != null) {
+			vortlistoService.delVortlistoVorto(loginInfo, List.of(vortoModel.getId()));
+		} else {
+			throw new VortlistoVortoNotExistException();
+		}
+	}
+
+	private VortlistoModel validateVortlisto(LoginInfo loginInfo, Long id) throws VortlistoNotExistException {
+		VortlistoModel existOne = vortlistoService.getVortlisto(loginInfo, id);
+		if (existOne == null)
+			throw new VortlistoNotExistException();
+		return existOne;
+	}
+
+	private Long getDefaultVortlistoId(LoginInfo loginInfo) {
+		UserConfig config = userConfigMapper.selectByPrimaryKey(loginInfo.getOpenid());
+		if (config != null && config.getDefVortlistoId() != null)
+			return config.getDefVortlistoId();
+
+		List<VortlistoModel> listoj = vortlistoService.getVortlistojByUser(loginInfo);
+		if (!listoj.isEmpty())
+			return listoj.get(listoj.size() - 1).getId();
+
+		return null;
+	}
+
 	private LoginInfo validateLogin0(String loginKey) throws InvalidLoginKeyException {
 		if (loginKey == null)
 			throw new InvalidLoginKeyException();
@@ -261,12 +428,8 @@ public class ProgrametoService {
 		return loginInfo;
 	}
 
-	private VortaroSource validateSectionKey(String sectionKey) throws InvalidSectionKeyException {
-		if (sectionKey == null)
-			throw new InvalidSectionKeyException();
-		VortaroSource source = SOURCES_BY_KEY.get(sectionKey);
-		if (source == null)
-			throw new InvalidSectionKeyException();
-		return source;
+	@ExceptionHandler
+	void handleIllegalArgumentException(IllegalArgumentException e, HttpServletResponse response) throws IOException {
+		response.sendError(HttpStatus.BAD_REQUEST.value());
 	}
 }

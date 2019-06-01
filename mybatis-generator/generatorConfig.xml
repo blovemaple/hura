@@ -55,5 +55,20 @@
 				javaType="java.lang.String" jdbcType="VARCHAR" />
 		</table>
 
+		<table tableName="vortlisto">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+		</table>
+
+		<table tableName="vortlisto_vorto">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+			<columnOverride column="signifo"
+				javaType="java.lang.String" jdbcType="VARCHAR" />
+		</table>
+
+		<table tableName="user_config">
+			<columnOverride column="hide_section_keys"
+				typeHandler="com.github.blovemaple.hura.util.StringListTypeHandler"
+				javaType="List&lt;java.lang.String&gt;" />
+		</table>
 	</context>
 </generatorConfiguration>

@@ -11,7 +11,8 @@ CREATE TABLE `hura`.`user` (
   `province` varchar(63) NOT NULL DEFAULT '',
   `city` varchar(63) NOT NULL DEFAULT '',
   `language` varchar(63) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_openid_IDX` (`openid`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `hura`.`abonkonto_log` (
@@ -49,4 +50,37 @@ CREATE TABLE `hura`.`programeto_query_log` (
   `has_result` tinyint(1) NOT NULL,
   `result` text NOT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `hura`.`vortlisto` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `openid` varchar(63) NOT NULL,
+  `name` varchar(63) NOT NULL,
+  `is_del` tinyint(1) NOT NULL,
+  `addtime` datetime NOT NULL,
+  `modtime` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `vortlisto_openid_IDX` (`openid`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `hura`.`vortlisto_vorto` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `vortlisto_id` bigint(20) unsigned NOT NULL,
+  `openid` varchar(63) NOT NULL,
+  `vorto` varchar(63) NOT NULL,
+  `signifo` text NOT NULL,
+  `is_del` tinyint(1) NOT NULL,
+  `addtime` datetime NOT NULL,
+  `modtime` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `vortlisto_vorto_vortlisto_id_IDX` (`vortlisto_id`,`vorto`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `hura`.`user_config` (
+  `openid` varchar(63) NOT NULL,
+  `def_vortlisto_id` bigint(20) DEFAULT NULL,
+  `show_query_history` tinyint(1) NOT NULL,
+  `hide_section_keys` varchar(255) NOT NULL,
+  `modtime` datetime NOT NULL,
+  PRIMARY KEY (`openid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -5,9 +5,9 @@ package com.github.blovemaple.hura.programeto;
  */
 public class ValidateLoginResponse {
 	private Boolean success;
-	private UserConf conf;
+	private UserConfigModel conf;
 
-	public static ValidateLoginResponse success(UserConf conf) {
+	public static ValidateLoginResponse success(UserConfigModel conf) {
 		ValidateLoginResponse res = new ValidateLoginResponse();
 		res.setSuccess(true);
 		res.setConf(conf);
@@ -28,11 +28,11 @@ public class ValidateLoginResponse {
 		this.success = success;
 	}
 
-	public UserConf getConf() {
+	public UserConfigModel getConf() {
 		return conf;
 	}
 
-	public void setConf(UserConf conf) {
+	public void setConf(UserConfigModel conf) {
 		this.conf = conf;
 	}
 
