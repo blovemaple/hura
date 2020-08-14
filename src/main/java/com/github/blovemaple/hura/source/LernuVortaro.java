@@ -36,17 +36,17 @@ public class LernuVortaro implements VortaroSource {
 		List<VortaroSourceResult> result = new ArrayList<>();
 
 		String dictionary;
-		switch(language) {
+		switch (language) {
 		case CHINESE:
-			dictionary="zh-cn|eo";
+			dictionary = "zh-cn|eo";
 			break;
 		case ESPERANTO:
-			dictionary="eo|zh-cn";
+			dictionary = "eo|zh-cn";
 			break;
 		default:
 			return null;
 		}
-		
+
 		Document doc = Jsoup.parse(queryRaw(vorto, dictionary));
 		for (Element item : doc.select("ul.dictionary-items").first().children()) {
 			if (item.hasClass("empty"))
@@ -80,7 +80,11 @@ public class LernuVortaro implements VortaroSource {
 		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("DictWords[dictionary]", dictionary));
 		nameValuePairs.add(new BasicNameValuePair("DictWords[word]", vorto));
+		nameValuePairs.add(new BasicNameValuePair("YII_CSRF_TOKEN",
+				"U1dGNGFUQWk5a0JXNG56bnRnSFVMcWUyaG5kVF9ibHXvg1Or371hX24ENpTucajyr2eDv9_86D4z0diVZfC80A=="));
 		post.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
+		post.setHeader("Cookie",
+				"YII_CSRF_TOKEN=U1dGNGFUQWk5a0JXNG56bnRnSFVMcWUyaG5kVF9ibHXvg1Or371hX24ENpTucajyr2eDv9_86D4z0diVZfC80A%3D%3D; cookieconsent_status=dismiss; PHPSESSID=2bqilkbv7203m4315uls9tm5v6; d17e7737c3706ee5bba0546a674d817e=f4c34fc95f305f78311c099bbd38e83559b660a5a%3A4%3A%7Bi%3A0%3Bs%3A6%3A%22160224%22%3Bi%3A1%3Bs%3A10%3A%22blovemaple%22%3Bi%3A2%3Bi%3A2592000%3Bi%3A3%3Ba%3A0%3A%7B%7D%7D; lang=zh-cn");
 
 		HttpClient http = HttpClients.createSystem();
 		HttpResponse response = http.execute(post);

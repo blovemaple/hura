@@ -2,32 +2,26 @@ package com.github.blovemaple.hura.source;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.blovemaple.hura.util.CssInliner;
 import com.github.blovemaple.hura.util.Language;
+import com.google.gson.Gson;
 
 /**
  * Vortaro.net
@@ -35,13 +29,14 @@ import com.github.blovemaple.hura.util.Language;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class Piv implements VortaroSource {
+	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(Piv.class);
 
 	HttpClientContext httpContext = HttpClientContext.create();
-	HttpClient http = HttpClients.custom()
-			.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
-	private String token;
+	HttpClient http = HttpClients.createSystem();
 	private String css;
+
+	private Gson gson = new Gson();
 
 	@Override
 	public String name() {
@@ -54,150 +49,23 @@ public class Piv implements VortaroSource {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.out.println("CONTENT: " + new Piv().query("lernado"));
+		System.out.println("CONTENT: " + new Piv().queryDetail("lerni"));
 		// Files.writeString(Paths.get("E:\\out.html"), new
 		// Piv().queryDetail("vortaro").get(0).getContent());
 	}
 
 	@Override
 	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
-		StringBuilder resultString = new StringBuilder();
-		contentElements(vorto, language).forEach(e -> resultNodeToString(e, resultString, 0));
-		if (resultString.length() == 0)
-			return null;
-		return List.of(new VortaroSourceResult(resultString.toString()));
-	}
-
-	@Override
-	public List<VortaroSourceResult> queryDetail(String vorto, Language language) throws IOException {
-		StringBuilder originalHtml = new StringBuilder();
-		originalHtml.append(
-				"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body>");
-
-		// contentElements(vorto, language).forEach(e -> e.html(originalHtml));
-		contentElements(vorto, language).forEach(e -> originalHtml.append(e.outerHtml()));
-		if (originalHtml.length() == 0)
-			return null;
-
-		originalHtml.append("</body></html>");
-
-		String resultHtml = CssInliner.inlineCss(originalHtml.toString(), getCss());
-
-		return List.of(new VortaroSourceResult(resultHtml));
-	}
-
-	/**
-	 * 查询并获取指定单词释义的html节点。<br>
-	 * 因为查出来的html中，查的那个单词有可能属于派生单词（见下注释），所以这时候需要只保留它自己的节点。
-	 */
-	private Stream<Element> contentElements(String vorto, Language language) throws IOException {
-		if (language != Language.ESPERANTO)
-			return Stream.empty();
-		if (!Language.isEsperantoWord(vorto))
-			return Stream.empty();
-
-		String rawHtml = queryRaw(vorto);
-		if (rawHtml == null)
-			return Stream.empty();
-
-		Document root = Jsoup.parse(rawHtml);
-
-		// 查找id=ow的节点中的单词原型
-		String targetWord;
-		Element OwElement = root.getElementById("ow");
-		if (OwElement != null)
-			targetWord = OwElement.attr("data-origin");
-		else
-			targetWord = vorto;
-
-		// 找到所有"article"节点
-		Elements articleElements = root.getElementsByClass("article");
-
-		// article的节点结构是（这里写的都是class）：
-		// article
-		// -- article_content_xxxx
-		// ---- <单词>（dfn节点，第一个单词，不一定是查的那一个，有可能在派生单词里）
-		// ---- signifonuanco*
-		// ---- derivo*
-		// ------ <单词>（dfn节点，派生单词）
-		// ------ signifonuanco*
-
-		// 首先按targetWord找到dfn节点，
-		// 如果是第一个单词则取整个article节点，
-		// 如果是派生单词，则只保留article、article_content_xxxx、对应的derivo节点
-
-		return articleElements.stream().map(articleElement -> {
-			// 先按照targetWord精确查找dfn节点
-			Elements targetDfnElements = articleElement.getElementsByClass(targetWord);
-			if (!targetDfnElements.isEmpty()) {
-				// 找到了精确的dfn节点，判断是不是派生单词（在derivo节点下）
-				Element dfnElement = targetDfnElements.first();
-				if (dfnElement.parent().hasClass("derivo")) {
-					// 是派生单词，去掉对应的derivo节点的所有sibling节点
-					dfnElement.parent().siblingNodes().forEach(Node::remove);
-				}
-			}
-			return articleElement;
-		});
-	}
-
-	public String queryRaw(String vorto) throws IOException {
-		return queryRaw(vorto, 0);
-	}
-
-	private String queryRaw(String vorto, int currentRetry) throws IOException {
-		if (currentRetry >= 5) {
-			// 限制重试次数
-			logger.info("Access vortaro.net retry exceeds limit.");
+		Element html = queryRaw(vorto, language);
+		if (html == null) {
 			return null;
 		}
-
-		HttpGet get;
-		try {
-			String url = "http://vortaro.net/ajax/articles/" + URLEncoder.encode(vorto, Charset.forName("UTF-8")) + "/"
-					+ getToken();
-			URIBuilder builder = new URIBuilder(url);
-			builder.setCharset(Charset.forName("UTF-8"));
-			get = new HttpGet(builder.build());
-		} catch (URISyntaxException e) {
-			// impossible
-			throw new RuntimeException(e);
-		}
-
-		HttpResponse response = http.execute(get, httpContext);
-		String rawHtml = EntityUtils.toString(response.getEntity());
-
-		Document root = Jsoup.parse(rawHtml);
-
-		// 找到所有"article"节点
-		Elements articleElements = root.getElementsByClass("article");
-		if (articleElements.isEmpty()) {
-			Elements errorsElements = root.getElementsByClass("errors");
-			if (errorsElements.html().contains("Okazis iu eraro")) {
-				// token非法，刷新token后重试
-				refreshToken();
-				return queryRaw(vorto, currentRetry + 1);
-			} else if (errorsElements.html().contains("ne estis sukcesa")) {
-				// 没有查询结果
-				return null;
-			} else {
-				// 未知错误，打印日志，返回没有查询结果
-				logger.error("Query vortaro.net error: " + root.html());
-				return null;
-			}
-		}
-
-		return rawHtml;
+		StringBuilder result = new StringBuilder();
+		simplify(html, result);
+		return List.of(new VortaroSourceResult(result.toString()));
 	}
 
-	/**
-	 * @param node
-	 * @param resultString
-	 * @param difinogrupoDepth
-	 *            有时候单词本身的解释里会有derivo节点，这种情况下貌似都会在difinogrupo节点下。<br>
-	 *            因此用这个变量表示目前的difinogrupo节点层级，如果>1说明在difinogrupo节点下，就不过滤deviro。
-	 */
-	private void resultNodeToString(Node node, StringBuilder resultString, int difinogrupoDepth) {
+	private void simplify(Node node, StringBuilder resultString) {
 		if (node instanceof Element) {
 			// div节点前换行
 			if (resultString.length() > 0 && ((Element) node).tagName().equals("div"))
@@ -205,17 +73,12 @@ public class Piv implements VortaroSource {
 
 			// 循环递归子节点
 			for (Node child : node.childNodes()) {
-				// 排除有siblings的衍生单词节点（没有siblings说明是被选出来的目标节点）
-				if (difinogrupoDepth == 0 && child instanceof Element && ((Element) child).hasClass("derivo")) {
-					if (!((Element) child).siblingElements().isEmpty())
-						continue;
-				}
 
 				// 排除上标节点
 				if (child instanceof Element && ((Element) child).tagName().equals("sup"))
 					continue;
 
-				// 排除Vortoreferenco之后的部分
+				// 排除Vortoreferenco之后的部分（TODO 这部分在新版暂时没找到对应的class）
 				if (child instanceof Element && ((Element) child).hasClass("Vortoreferenco"))
 					break;
 
@@ -239,11 +102,7 @@ public class Piv implements VortaroSource {
 				}
 
 				// 递归子节点
-				int childDifinogrupoDepth = difinogrupoDepth;
-				if (child instanceof Element && ((Element) child).hasClass("difinogrupo")) {
-					childDifinogrupoDepth++;
-				}
-				resultNodeToString(child, resultString, childDifinogrupoDepth);
+				simplify(child, resultString);
 
 				// <b>纯数字标签后加点
 				if (child instanceof Element && ((Element) child).tagName().equals("b")
@@ -262,38 +121,84 @@ public class Piv implements VortaroSource {
 		}
 	}
 
-	private String getToken() throws IOException {
-		return token == null ? refreshToken() : token;
+	@Override
+	public List<VortaroSourceResult> queryDetail(String vorto, Language language) throws IOException {
+		StringBuilder originalHtml = new StringBuilder();
+		originalHtml.append(
+				"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body>");
+
+		Element html = queryRaw(vorto, language);
+		if (html == null) {
+			return null;
+		}
+		originalHtml.append(html.outerHtml());
+
+		originalHtml.append("</body></html>");
+
+		String resultHtml = CssInliner.inlineCss(originalHtml.toString(), getCss());
+
+		return List.of(new VortaroSourceResult(resultHtml));
 	}
 
-	private synchronized String refreshToken() throws IOException {
-		token = null;
-		synchronized (this) {
-			if (token != null)
-				return token;
+	private Element queryRaw(String vorto, Language language) throws IOException {
+		if (language != Language.ESPERANTO)
+			return null;
+		if (!Language.isEsperantoWord(vorto))
+			return null;
 
-			logger.info("Refreshing token...");
-
-			HttpGet get;
-			try {
-				URIBuilder builder = new URIBuilder("http://vortaro.net/");
-				get = new HttpGet(builder.build());
-			} catch (URISyntaxException e) {
-				// impossible
-				throw new RuntimeException(e);
-			}
-
-			HttpResponse response = http.execute(get, httpContext);
-			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK)
-				throw new IOException("Access vortaro.net failed, status " + response.getStatusLine().getStatusCode());
-			List<Cookie> cookies = httpContext.getCookieStore().getCookies();
-			Cookie picTokenCookie = cookies.stream().filter(cookie -> cookie.getName().equals("piv_token")).findFirst()
-					.orElseThrow(() -> new IOException("Access vortaro.net response no piv_token cookie."));
-			this.token = picTokenCookie.getValue();
-
-			logger.info("Refresh token success, token=" + this.token);
-			return token;
+		HttpGet get;
+		try {
+			String url = "https://vortaro.net/py/serchi.py?m=%7B%22s%22%3A%22" + vorto
+					+ "%22%2C%22artikoloj_jamaj%22%3A0%2C%22kap%22%3A1%2C%22der%22%3A1%2C%22tek%22%3A0%2C%22uskle%22%3A0%7D";
+			URIBuilder builder = new URIBuilder(url);
+			builder.setCharset(Charset.forName("UTF-8"));
+			get = new HttpGet(builder.build());
+		} catch (URISyntaxException e) {
+			// impossible
+			throw new RuntimeException(e);
 		}
+
+		HttpResponse response = http.execute(get, httpContext);
+		String rawJson = EntityUtils.toString(response.getEntity());
+
+		PivResponse res = gson.fromJson(rawJson, PivResponse.class);
+		if (res.getVortoj().isEmpty()) {
+			// 没有查到结果
+			return null;
+		}
+		Integer vortoId = res.getVortoj().get(0).get(0); // 返回的精确词id
+
+		Element partHtml = parseVortoPart(res.getPivdok(), vortoId);
+		return partHtml;
+	}
+
+	/**
+	 * 从html中解析出指定单词的部分。
+	 * 
+	 * @param html
+	 * @param vortoId
+	 */
+	private Element parseVortoPart(String html, Integer vortoId) {
+		Document root = Jsoup.parse(html);
+
+		// 找到 k+vortoId 的父节点则为原型词， d+vortoId 的父节点则为派生词
+		Element vortoElement = root.getElementById("k" + vortoId);
+		if (vortoElement == null) {
+			vortoElement = root.getElementById("d" + vortoId);
+		}
+		if (vortoElement == null) {
+			throw new RuntimeException("Cannot find vorto element: " + vortoId);
+		}
+		vortoElement = vortoElement.parent();
+
+		// 去掉所有派生词节点
+		vortoElement.children().forEach(child -> {
+			if (child.hasClass("derivajho")) {
+				child.remove();
+			}
+		});
+
+		return vortoElement;
 	}
 
 	private String getCss() throws IOException {
@@ -306,7 +211,7 @@ public class Piv implements VortaroSource {
 
 		HttpGet get;
 		try {
-			URIBuilder builder = new URIBuilder("http://vortaro.net/css/common.css");
+			URIBuilder builder = new URIBuilder("https://vortaro.net/stilo/css/piv.css");
 			get = new HttpGet(builder.build());
 		} catch (URISyntaxException e) {
 			// impossible
