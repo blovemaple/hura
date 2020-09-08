@@ -8,9 +8,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.mybatis.dynamic.sql.SqlBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -28,7 +30,7 @@ import com.github.blovemaple.hura.dal.ProgrametoLoginLogMapper;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLog;
 import com.github.blovemaple.hura.dal.ProgrametoQueryLogMapper;
 import com.github.blovemaple.hura.dal.User;
-import com.github.blovemaple.hura.dal.UserExample;
+import com.github.blovemaple.hura.dal.UserDynamicSqlSupport;
 import com.github.blovemaple.hura.dal.UserMapper;
 import com.github.blovemaple.hura.source.ChenVortaro;
 import com.github.blovemaple.hura.source.GoogleTranslate2;
@@ -153,11 +155,10 @@ public class ProgrametoService {
 	}
 
 	private void saveUser(WxUserInfo userInfo, LoginInfo loginInfo) {
-		UserExample userExample = new UserExample();
-		userExample.createCriteria().andOpenidEqualTo(loginInfo.getOpenid());
-		List<User> users = userMapper.selectByExample(userExample);
+		Optional<User> userResult = userMapper
+				.selectOne(c -> c.where(UserDynamicSqlSupport.openid, SqlBuilder.isEqualTo(loginInfo.getOpenid())));
 
-		if (users.isEmpty()) {
+		if (userResult.isEmpty()) {
 			User user = new User();
 			user.setOpenid(loginInfo.getOpenid());
 			user.setUnionid(loginInfo.getUnionid());
@@ -171,7 +172,7 @@ public class ProgrametoService {
 			}
 			userMapper.insertSelective(user);
 		} else {
-			User user = users.get(0);
+			User user = userResult.get();
 			BeanUtils.copyProperties(userInfo, user);
 			userMapper.updateByPrimaryKeySelective(user);
 		}

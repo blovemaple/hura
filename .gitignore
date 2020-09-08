@@ -16,3 +16,4 @@ application-product.properties
 application-test.properties
 
 .dbeaver-data-sources.xml
+/.dbeaver/
