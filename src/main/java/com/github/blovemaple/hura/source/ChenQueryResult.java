@@ -49,6 +49,14 @@ public class ChenQueryResult {
 		private String radiko;
 		private String signifo;
 
+		public ListItem() {
+		}
+
+		public ListItem(String radiko, String signifo) {
+			this.radiko = radiko;
+			this.signifo = signifo;
+		}
+
 		public String getRadiko() {
 			return radiko;
 		}

@@ -1,6 +1,6 @@
 package com.github.blovemaple.hura.source;
 
-import static com.github.blovemaple.hura.util.MyUtils.*;
+import static com.github.blovemaple.hura.util.MyUtils.isChinese;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -22,7 +22,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.mybatis.dynamic.sql.SqlBuilder;
 
+import com.github.blovemaple.hura.SpringContext;
+import com.github.blovemaple.hura.dal.Vorto5000;
+import com.github.blovemaple.hura.dal.Vorto5000DynamicSqlSupport;
+import com.github.blovemaple.hura.dal.Vorto5000Mapper;
 import com.github.blovemaple.hura.source.ChenQueryResult.ListItem;
 import com.github.blovemaple.hura.util.Conf;
 import com.github.blovemaple.hura.util.Language;
@@ -33,16 +38,12 @@ import com.google.gson.Gson;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-/**
- * @author blovemaple <blovemaple2010(at)gmail.com>
- *
- */
 public class ChenVortaro implements VortaroSource {
 
 	private boolean goodOnly = true;
 
 	private Gson gson = new Gson();
-
+	
 	private String key;
 	{
 		try {
@@ -67,13 +68,7 @@ public class ChenVortaro implements VortaroSource {
 	@Override
 	public List<VortaroSourceResult> query(String vorto, Language language) throws IOException {
 		try {
-			ChenQueryResult queryResult = queryResult(vorto);
-			if (queryResult.getStatus() == 0)
-				// 接口失败
-				return null;
-			if (queryResult.getSum() == 0)
-				// 查询无结果
-				return null;
+			List<ChenQueryResult.ListItem> queryResult = queryResultFromDB(vorto, language);
 
 			switch (language) {
 			case CHINESE:
@@ -81,7 +76,7 @@ public class ChenVortaro implements VortaroSource {
 				List<ListItem> finalItems;
 
 				// 取有效结果
-				List<ListItem> validItems = queryResult.getList().stream()
+				List<ListItem> validItems = queryResult.stream()
 						// 清理一下
 						.peek(this::cleanSignifo)
 						// 过滤出有效结果
@@ -106,7 +101,7 @@ public class ChenVortaro implements VortaroSource {
 			case ESPERANTO:
 				// 输入是世界语
 				// 只取完全匹配的单词的释义
-				List<String> results = queryResult.getList().stream()
+				List<String> results = queryResult.stream()
 						.filter(item -> item.getRadiko().equalsIgnoreCase(vorto)).map(ListItem::getSignifo)
 						.collect(Collectors.toList());
 				if (results.isEmpty())
@@ -120,18 +115,22 @@ public class ChenVortaro implements VortaroSource {
 			default:
 				return null;
 			}
-		} catch (URISyntaxException e) {
-			// 不可能
-			e.printStackTrace();
-			return null;
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
 	}
 
-	private ChenQueryResult queryResult(String vorto) throws URISyntaxException, ParseException, IOException,
-			KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-		return gson.fromJson(queryRaw(vorto), ChenQueryResult.class);
+	@SuppressWarnings("unused")
+	private List<ChenQueryResult.ListItem> queryResult(String vorto) throws URISyntaxException, ParseException,
+			IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		ChenQueryResult queryResult = gson.fromJson(queryRaw(vorto), ChenQueryResult.class);
+		if (queryResult.getStatus() == 0)
+			// 接口失败
+			return null;
+		if (queryResult.getSum() == 0)
+			// 查询无结果
+			return null;
+		return queryResult.getList();
 	}
 
 	private String queryRaw(String vorto) throws ParseException, IOException, URISyntaxException {
@@ -144,6 +143,29 @@ public class ChenVortaro implements VortaroSource {
 		HttpResponse response = http.execute(get);
 		String responseStr = EntityUtils.toString(response.getEntity());
 		return responseStr;
+	}
+
+	private List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language) {
+		Vorto5000Mapper vorto5000Mapper = SpringContext.getBean(Vorto5000Mapper.class);
+
+		List<Vorto5000> dbResults;
+		switch (language) {
+		case CHINESE:
+			dbResults = vorto5000Mapper.select(
+					c -> c.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%")));
+			break;
+		case ESPERANTO:
+			dbResults = vorto5000Mapper
+					.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isEqualTo(vorto)));
+			break;
+		default:
+			return null;
+		}
+
+		List<ChenQueryResult.ListItem> result = dbResults.stream()
+				.map(dbResult -> new ChenQueryResult.ListItem(dbResult.getRadiko(), dbResult.getSignifo()))
+				.collect(Collectors.toList());
+		return result;
 	}
 
 	private void cleanSignifo(ChenQueryResult.ListItem item) {

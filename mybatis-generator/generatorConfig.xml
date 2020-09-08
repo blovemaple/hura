@@ -55,5 +55,9 @@
 				javaType="java.lang.String" jdbcType="VARCHAR" />
 		</table>
 
+		<table tableName="vorto5000">
+			<generatedKey column="id" sqlStatement="MySql" identity="true" />
+		</table>
+
 	</context>
 </generatorConfiguration>
