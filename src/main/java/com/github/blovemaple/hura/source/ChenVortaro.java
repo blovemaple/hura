@@ -151,8 +151,8 @@ public class ChenVortaro implements VortaroSource {
 		List<Vorto5000> dbResults;
 		switch (language) {
 		case CHINESE:
-			dbResults = vorto5000Mapper.select(
-					c -> c.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%")));
+			dbResults = vorto5000Mapper.select(c -> c
+					.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%")).limit(100));
 			break;
 		case ESPERANTO:
 			dbResults = vorto5000Mapper
