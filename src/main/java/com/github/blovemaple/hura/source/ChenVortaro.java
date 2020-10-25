@@ -145,7 +145,7 @@ public class ChenVortaro implements VortaroSource {
 		return responseStr;
 	}
 
-	private List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language) {
+	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language) {
 		Vorto5000Mapper vorto5000Mapper = SpringContext.getBean(Vorto5000Mapper.class);
 
 		List<Vorto5000> dbResults;

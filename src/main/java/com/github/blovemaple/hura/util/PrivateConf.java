@@ -12,6 +12,9 @@ public class PrivateConf {
 	private String wxProgrametoAppid;
 	@Value("${wechat.programeto.secret}")
 	private String wxProgrametoSecret;
+	
+	@Value("${vortaroapi.key}")
+	private String vortaroApiKey;
 
 	public String getWxProgrametoAppid() {
 		return wxProgrametoAppid;
@@ -19,6 +22,10 @@ public class PrivateConf {
 
 	public String getWxProgrametoSecret() {
 		return wxProgrametoSecret;
+	}
+
+	public String getVortaroApiKey() {
+		return vortaroApiKey;
 	}
 
 }
