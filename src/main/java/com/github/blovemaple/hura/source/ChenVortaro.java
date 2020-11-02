@@ -146,17 +146,29 @@ public class ChenVortaro implements VortaroSource {
 	}
 
 	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language) {
+		return queryResultFromDB(vorto, language, null, false);
+	}
+
+	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language, Integer limit,
+			boolean eoAsPrefix) {
 		Vorto5000Mapper vorto5000Mapper = SpringContext.getBean(Vorto5000Mapper.class);
 
 		List<Vorto5000> dbResults;
 		switch (language) {
 		case CHINESE:
-			dbResults = vorto5000Mapper.select(c -> c
-					.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%")).limit(100));
+			dbResults = vorto5000Mapper
+					.select(c -> c.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%"))
+							.limit(limit != null ? limit : 100));
 			break;
 		case ESPERANTO:
-			dbResults = vorto5000Mapper
-					.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isEqualTo(vorto)));
+			if (eoAsPrefix) {
+				dbResults = vorto5000Mapper
+						.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isLike(() -> vorto + "%"))
+								.limit(limit != null ? limit : 100));
+			} else {
+				dbResults = vorto5000Mapper
+						.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isEqualTo(vorto)));
+			}
 			break;
 		default:
 			return null;
