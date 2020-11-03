@@ -23,6 +23,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.mybatis.dynamic.sql.SqlBuilder;
+import org.mybatis.dynamic.sql.VisitableCondition;
 
 import com.github.blovemaple.hura.SpringContext;
 import com.github.blovemaple.hura.dal.Vorto5000;
@@ -39,6 +40,10 @@ import com.google.gson.Gson;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class ChenVortaro implements VortaroSource {
+	public static final int EO_MATCHTYPE_PREFIX = 0;
+	public static final int EO_MATCHTYPE_SUFFIX = 1;
+	public static final int EO_MATCHTYPE_CONTAIN = 2;
+	public static final int EO_MATCHTYPE_EXACT = 3;
 
 	private boolean goodOnly = true;
 
@@ -146,11 +151,11 @@ public class ChenVortaro implements VortaroSource {
 	}
 
 	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language) {
-		return queryResultFromDB(vorto, language, null, false);
+		return queryResultFromDB(vorto, language, 100, EO_MATCHTYPE_EXACT);
 	}
 
-	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language, Integer limit,
-			boolean eoAsPrefix) {
+	public List<ChenQueryResult.ListItem> queryResultFromDB(String vorto, Language language, int limit,
+			int eoMatchType) {
 		Vorto5000Mapper vorto5000Mapper = SpringContext.getBean(Vorto5000Mapper.class);
 
 		List<Vorto5000> dbResults;
@@ -158,17 +163,26 @@ public class ChenVortaro implements VortaroSource {
 		case CHINESE:
 			dbResults = vorto5000Mapper
 					.select(c -> c.where(Vorto5000DynamicSqlSupport.signifo, SqlBuilder.isLike(() -> "%" + vorto + "%"))
-							.limit(limit != null ? limit : 100));
+							.limit(limit));
 			break;
 		case ESPERANTO:
-			if (eoAsPrefix) {
-				dbResults = vorto5000Mapper
-						.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isLike(() -> vorto + "%"))
-								.limit(limit != null ? limit : 100));
-			} else {
-				dbResults = vorto5000Mapper
-						.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, SqlBuilder.isEqualTo(vorto)));
+			VisitableCondition<String> condition;
+			switch (eoMatchType) {
+			case EO_MATCHTYPE_PREFIX:
+				condition = SqlBuilder.isLike(() -> vorto + "%");
+				break;
+			case EO_MATCHTYPE_SUFFIX:
+				condition = SqlBuilder.isLike(() -> "%" + vorto);
+				break;
+			case EO_MATCHTYPE_CONTAIN:
+				condition = SqlBuilder.isLike(() -> "%" + vorto + "%");
+				break;
+			case EO_MATCHTYPE_EXACT:
+			default:
+				condition = SqlBuilder.isEqualTo(vorto);
+				break;
 			}
+			dbResults = vorto5000Mapper.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, condition).limit(limit));
 			break;
 		default:
 			return null;

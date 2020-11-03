@@ -41,7 +41,8 @@ public class VortaroApiService {
 
 	@RequestMapping("/query")
 	public ChenQueryResult query(@RequestParam("key") String key, @RequestParam("str") String query,
-			@RequestParam(name = "limit", required = false) Integer limit) {
+			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
+			@RequestParam(name = "matchtype", required = false, defaultValue = "0") Integer matchType) {
 		if (!privateConf.getVortaroApiKey().equals(key)) {
 			logger.info("Invalid key for vortaro query: " + key);
 			return ChenQueryResult.failed(query);
@@ -56,7 +57,7 @@ public class VortaroApiService {
 		ChenQueryResult result;
 		try {
 			List<ListItem> items = chenVortaro.queryResultFromDB(formattedQuery, Language.determine(formattedQuery),
-					limit, true);
+					limit, matchType);
 			result = ChenQueryResult.success(query, items);
 		} catch (Exception e) {
 			logger.error("Error query chen vortaro data.", e);
