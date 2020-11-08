@@ -8,9 +8,9 @@ import java.util.List;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public enum Flection {
-	PLURALO_AND_AKUZATIVO("复数、宾格（或度量、时间点、方向等）", "jn", "", "a", "o"), //
-	PLURALO("复数", "j", "", "a", "o"), //
-	AKUZATIVO("宾格（或度量、时间点、方向等）", "n", "", "a", "o", "j"), //
+	PLURALO_AND_AKUZATIVO("复数、宾格（或度量、时间点、方向等）", "jn", "", "a", "o", "u"), //
+	PLURALO("复数", "j", "", "a", "o", "u"), //
+	AKUZATIVO("宾格（或度量、时间点、方向等）", "n", "", "a", "o", "u", "j"), //
 
 	PREZENCO("动词现在时", "as", "i"), //
 	PRETERITO("动词过去时", "is", "i"), //

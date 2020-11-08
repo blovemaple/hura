@@ -1,6 +1,6 @@
 package com.github.blovemaple.hura.vorto;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +29,7 @@ public class Lemmatization implements VortaroSource {
 	private WordEnding ending;
 
 	public static Lemmatization parse(String vorto) {
+		vorto = vorto.toLowerCase();
 
 		Lemmatization result = new Lemmatization(vorto);
 
@@ -38,15 +39,8 @@ public class Lemmatization implements VortaroSource {
 		if (vorto.matches(".*\\s.*"))
 			return result;
 
-		VortetoType vortetoType = VortetoType.typeOfVorto(vorto);
-		if (vortetoType != null) {
-			result.setVortetoType(vortetoType);
-			return result;
-		}
-
-		Pair<FirstPart, LastPart> tabelParts = Tabelvortoj.parseParts(vorto);
-		if (tabelParts != null) {
-			result.setTabelParts(tabelParts);
+		boolean specialSucc = parseSpecialWords(vorto, result);
+		if (specialSucc) {
 			return result;
 		}
 
@@ -62,6 +56,22 @@ public class Lemmatization implements VortaroSource {
 		}
 
 		return result;
+	}
+
+	private static boolean parseSpecialWords(String vorto, Lemmatization result) {
+		VortetoType vortetoType = VortetoType.typeOfVorto(vorto);
+		if (vortetoType != null) {
+			result.setVortetoType(vortetoType);
+			return true;
+		}
+
+		Pair<FirstPart, LastPart> tabelParts = Tabelvortoj.parseParts(vorto);
+		if (tabelParts != null) {
+			result.setTabelParts(tabelParts);
+			return true;
+		}
+
+		return false;
 	}
 
 	private static boolean parseFlections(String vorto, Lemmatization result) {
@@ -82,6 +92,9 @@ public class Lemmatization implements VortaroSource {
 						break;
 					}
 				}
+			}
+			if (parseSpecialWords(remaining, new Lemmatization(remaining))) {
+				break;
 			}
 		} while (added);
 
