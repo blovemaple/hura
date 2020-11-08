@@ -23,6 +23,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.mybatis.dynamic.sql.SqlBuilder;
+import org.mybatis.dynamic.sql.SqlColumn;
 import org.mybatis.dynamic.sql.VisitableCondition;
 
 import com.github.blovemaple.hura.SpringContext;
@@ -44,6 +45,7 @@ public class ChenVortaro implements VortaroSource {
 	public static final int EO_MATCHTYPE_SUFFIX = 1;
 	public static final int EO_MATCHTYPE_CONTAIN = 2;
 	public static final int EO_MATCHTYPE_EXACT = 3;
+	public static final int EO_MATCHTYPE_ROOT_SUFFIX = 4;
 
 	private boolean goodOnly = true;
 
@@ -166,23 +168,32 @@ public class ChenVortaro implements VortaroSource {
 							.limit(limit));
 			break;
 		case ESPERANTO:
+			SqlColumn<String> column;
 			VisitableCondition<String> condition;
 			switch (eoMatchType) {
 			case EO_MATCHTYPE_PREFIX:
+				column = Vorto5000DynamicSqlSupport.radiko;
 				condition = SqlBuilder.isLike(() -> vorto + "%");
 				break;
 			case EO_MATCHTYPE_SUFFIX:
+				column = Vorto5000DynamicSqlSupport.radiko;
+				condition = SqlBuilder.isLike(() -> "%" + vorto);
+				break;
+			case EO_MATCHTYPE_ROOT_SUFFIX:
+				column = Vorto5000DynamicSqlSupport.kruda;
 				condition = SqlBuilder.isLike(() -> "%" + vorto);
 				break;
 			case EO_MATCHTYPE_CONTAIN:
+				column = Vorto5000DynamicSqlSupport.radiko;
 				condition = SqlBuilder.isLike(() -> "%" + vorto + "%");
 				break;
 			case EO_MATCHTYPE_EXACT:
 			default:
+				column = Vorto5000DynamicSqlSupport.radiko;
 				condition = SqlBuilder.isEqualTo(vorto);
 				break;
 			}
-			dbResults = vorto5000Mapper.select(c -> c.where(Vorto5000DynamicSqlSupport.radiko, condition).limit(limit));
+			dbResults = vorto5000Mapper.select(c -> c.where(column, condition).limit(limit));
 			break;
 		default:
 			return null;

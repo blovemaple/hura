@@ -35,7 +35,7 @@ import org.mybatis.dynamic.sql.util.mybatis3.MyBatis3Utils;
 public interface Vorto5000Mapper {
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
-	BasicColumn[] selectList = BasicColumn.columnList(id, radiko, signifo);
+	BasicColumn[] selectList = BasicColumn.columnList(id, radiko, kruda, signifo);
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	@SelectProvider(type = SqlProviderAdapter.class, method = "select")
@@ -60,6 +60,7 @@ public interface Vorto5000Mapper {
 	@Results(id = "Vorto5000Result", value = {
 			@Result(column = "id", property = "id", jdbcType = JdbcType.INTEGER, id = true),
 			@Result(column = "radiko", property = "radiko", jdbcType = JdbcType.VARCHAR),
+			@Result(column = "kruda", property = "kruda", jdbcType = JdbcType.VARCHAR),
 			@Result(column = "signifo", property = "signifo", jdbcType = JdbcType.LONGVARCHAR) })
 	List<Vorto5000> selectMany(SelectStatementProvider selectStatement);
 
@@ -84,14 +85,15 @@ public interface Vorto5000Mapper {
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	default int insert(Vorto5000 record) {
-		return MyBatis3Utils.insert(this::insert, record, vorto5000,
-				c -> c.map(radiko).toProperty("radiko").map(signifo).toProperty("signifo"));
+		return MyBatis3Utils.insert(this::insert, record, vorto5000, c -> c.map(radiko).toProperty("radiko").map(kruda)
+				.toProperty("kruda").map(signifo).toProperty("signifo"));
 	}
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	default int insertSelective(Vorto5000 record) {
 		return MyBatis3Utils.insert(this::insert, record, vorto5000,
-				c -> c.map(radiko).toPropertyWhenPresent("radiko", record::getRadiko).map(signifo)
+				c -> c.map(radiko).toPropertyWhenPresent("radiko", record::getRadiko).map(kruda)
+						.toPropertyWhenPresent("kruda", record::getKruda).map(signifo)
 						.toPropertyWhenPresent("signifo", record::getSignifo));
 	}
 
@@ -122,24 +124,26 @@ public interface Vorto5000Mapper {
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	static UpdateDSL<UpdateModel> updateAllColumns(Vorto5000 record, UpdateDSL<UpdateModel> dsl) {
-		return dsl.set(radiko).equalTo(record::getRadiko).set(signifo).equalTo(record::getSignifo);
+		return dsl.set(radiko).equalTo(record::getRadiko).set(kruda).equalTo(record::getKruda).set(signifo)
+				.equalTo(record::getSignifo);
 	}
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	static UpdateDSL<UpdateModel> updateSelectiveColumns(Vorto5000 record, UpdateDSL<UpdateModel> dsl) {
-		return dsl.set(radiko).equalToWhenPresent(record::getRadiko).set(signifo)
-				.equalToWhenPresent(record::getSignifo);
+		return dsl.set(radiko).equalToWhenPresent(record::getRadiko).set(kruda).equalToWhenPresent(record::getKruda)
+				.set(signifo).equalToWhenPresent(record::getSignifo);
 	}
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	default int updateByPrimaryKey(Vorto5000 record) {
-		return update(c -> c.set(radiko).equalTo(record::getRadiko).set(signifo).equalTo(record::getSignifo).where(id,
-				isEqualTo(record::getId)));
+		return update(c -> c.set(radiko).equalTo(record::getRadiko).set(kruda).equalTo(record::getKruda).set(signifo)
+				.equalTo(record::getSignifo).where(id, isEqualTo(record::getId)));
 	}
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source Table: vorto5000")
 	default int updateByPrimaryKeySelective(Vorto5000 record) {
-		return update(c -> c.set(radiko).equalToWhenPresent(record::getRadiko).set(signifo)
-				.equalToWhenPresent(record::getSignifo).where(id, isEqualTo(record::getId)));
+		return update(
+				c -> c.set(radiko).equalToWhenPresent(record::getRadiko).set(kruda).equalToWhenPresent(record::getKruda)
+						.set(signifo).equalToWhenPresent(record::getSignifo).where(id, isEqualTo(record::getId)));
 	}
 }

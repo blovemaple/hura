@@ -16,6 +16,8 @@ public class Vorto5000 {
 	 */
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.radiko")
 	private String radiko;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.kruda")
+	private String kruda;
 	/**
 	 * Database Column Remarks: 词义
 	 */
@@ -40,6 +42,16 @@ public class Vorto5000 {
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.radiko")
 	public void setRadiko(String radiko) {
 		this.radiko = radiko;
+	}
+
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.kruda")
+	public String getKruda() {
+		return kruda;
+	}
+
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.kruda")
+	public void setKruda(String kruda) {
+		this.kruda = kruda;
 	}
 
 	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.signifo")
