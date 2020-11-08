@@ -9,120 +9,113 @@ import javax.annotation.Generated;
  * This class corresponds to the database table abonkonto_log
  */
 public class AbonkontoLog {
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.id")
-    private Long id;
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.time")
-    private Date time;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.id")
+	private Long id;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.time")
+	private Date time;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.status")
+	private String status;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.cost")
+	private Integer cost;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.openid")
+	private String openid;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.unionid")
+	private String unionid;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.msg_type")
+	private String msgType;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.request")
+	private String request;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.response")
+	private String response;
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.status")
-    private String status;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.id")
+	public Long getId() {
+		return id;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.cost")
-    private Integer cost;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.id")
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.openid")
-    private String openid;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.time")
+	public Date getTime() {
+		return time;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.unionid")
-    private String unionid;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.time")
+	public void setTime(Date time) {
+		this.time = time;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.msg_type")
-    private String msgType;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.status")
+	public String getStatus() {
+		return status;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.request")
-    private String request;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.status")
+	public void setStatus(String status) {
+		this.status = status;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.response")
-    private String response;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.cost")
+	public Integer getCost() {
+		return cost;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.id")
-    public Long getId() {
-        return id;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.cost")
+	public void setCost(Integer cost) {
+		this.cost = cost;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.id")
-    public void setId(Long id) {
-        this.id = id;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.openid")
+	public String getOpenid() {
+		return openid;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.time")
-    public Date getTime() {
-        return time;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.openid")
+	public void setOpenid(String openid) {
+		this.openid = openid;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.time")
-    public void setTime(Date time) {
-        this.time = time;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.unionid")
+	public String getUnionid() {
+		return unionid;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.status")
-    public String getStatus() {
-        return status;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.unionid")
+	public void setUnionid(String unionid) {
+		this.unionid = unionid;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.status")
-    public void setStatus(String status) {
-        this.status = status;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.msg_type")
+	public String getMsgType() {
+		return msgType;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.cost")
-    public Integer getCost() {
-        return cost;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.msg_type")
+	public void setMsgType(String msgType) {
+		this.msgType = msgType;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.cost")
-    public void setCost(Integer cost) {
-        this.cost = cost;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.request")
+	public String getRequest() {
+		return request;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.openid")
-    public String getOpenid() {
-        return openid;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.request")
+	public void setRequest(String request) {
+		this.request = request;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.openid")
-    public void setOpenid(String openid) {
-        this.openid = openid;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.response")
+	public String getResponse() {
+		return response;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.unionid")
-    public String getUnionid() {
-        return unionid;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.unionid")
-    public void setUnionid(String unionid) {
-        this.unionid = unionid;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.msg_type")
-    public String getMsgType() {
-        return msgType;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.msg_type")
-    public void setMsgType(String msgType) {
-        this.msgType = msgType;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.request")
-    public String getRequest() {
-        return request;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.request")
-    public void setRequest(String request) {
-        this.request = request;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.response")
-    public String getResponse() {
-        return response;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: abonkonto_log.response")
-    public void setResponse(String response) {
-        this.response = response;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: abonkonto_log.response")
+	public void setResponse(String response) {
+		this.response = response;
+	}
 }

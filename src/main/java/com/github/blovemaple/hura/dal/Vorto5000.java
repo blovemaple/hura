@@ -8,50 +8,47 @@ import javax.annotation.Generated;
  * This class corresponds to the database table vorto5000
  */
 public class Vorto5000 {
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.id")
-    private Integer id;
 
-    /**
-     * Database Column Remarks:
-     *   词根
-     */
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.radiko")
-    private String radiko;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.id")
+	private Integer id;
+	/**
+	 * Database Column Remarks: 词根
+	 */
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.radiko")
+	private String radiko;
+	/**
+	 * Database Column Remarks: 词义
+	 */
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.signifo")
+	private String signifo;
 
-    /**
-     * Database Column Remarks:
-     *   词义
-     */
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.signifo")
-    private String signifo;
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.id")
+	public Integer getId() {
+		return id;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.id")
-    public Integer getId() {
-        return id;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.id")
+	public void setId(Integer id) {
+		this.id = id;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.id")
-    public void setId(Integer id) {
-        this.id = id;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.radiko")
+	public String getRadiko() {
+		return radiko;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.radiko")
-    public String getRadiko() {
-        return radiko;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.radiko")
+	public void setRadiko(String radiko) {
+		this.radiko = radiko;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.radiko")
-    public void setRadiko(String radiko) {
-        this.radiko = radiko;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.signifo")
+	public String getSignifo() {
+		return signifo;
+	}
 
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.signifo")
-    public String getSignifo() {
-        return signifo;
-    }
-
-    @Generated(value="org.mybatis.generator.api.MyBatisGenerator", comments="Source field: vorto5000.signifo")
-    public void setSignifo(String signifo) {
-        this.signifo = signifo;
-    }
+	@Generated(value = "org.mybatis.generator.api.MyBatisGenerator", comments = "Source field: vorto5000.signifo")
+	public void setSignifo(String signifo) {
+		this.signifo = signifo;
+	}
 }
