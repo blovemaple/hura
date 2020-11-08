@@ -35,7 +35,7 @@ public class MyUtils {
 				|| (unicodeBlock == Character.UnicodeBlock.CJK_RADICALS_SUPPLEMENT);
 	}
 
-	private static final Set<Integer> ESPERANTO_CHARS = "abcĉdefgĝhĥijĵklmnopqrsŝtuŭvwxyz".chars().boxed()
+	private static final Set<Integer> ESPERANTO_CHARS = "abcĉdefgĝhĥijĵklmnopqrsŝtuŭvwxyz-".chars().boxed()
 			.collect(toSet());
 
 	/**
