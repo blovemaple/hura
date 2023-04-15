@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.blovemaple.hura.gpt.OpenAiApi;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -67,8 +68,12 @@ public class RequestServlet extends HttpServlet {
 	@Autowired
 	private AbonkontoLogMapper logMapper;
 
+	@Autowired
+	private OpenAiApi openAiApi;
+
 	@SuppressWarnings("unused")
 	private String myUserName;
+
 	{
 		try {
 			myUserName = Conf.str("private", "myusername");
@@ -78,6 +83,7 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	private String wechatToken;
+
 	{
 		try {
 			wechatToken = Conf.str("private", "wechat.token");
@@ -120,88 +126,92 @@ public class RequestServlet extends HttpServlet {
 
 		try {
 			switch (message.getMsgType()) {
-			case "event":
-				if ("subscribe".equals(message.getEvent())) {
-					writeResponse(SUCC, startTime, "Bonvenon!\n"
-							+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，请点击右上角图标，在“相关小程序”中使用“Hura世界语助手”小程序。如果不想使用小程序，也可以直接向我（Hura公众号）发送文字或图片消息即可得到查询结果。\n"
-							+ "目前Hura还不成熟，如有改进建议请发送邮件给作者：blovemaple2010@gmail.com。\n"
-							+ "Hura后台服务代码开源，如果你是程序猿/媛朋友，可在Github上搜索“hura”。\n" + "希望Hura能帮到你。 :)", message, response);
+				case "event":
+					if ("subscribe".equals(message.getEvent())) {
+						writeResponse(SUCC, startTime, "Bonvenon!\n"
+								+ "欢迎使用Hura！Hura是一个世界语汉语双向词典/翻译工具，请点击右上角图标，在“相关小程序”中使用“Hura世界语助手”小程序。如果不想使用小程序，也可以直接向我（Hura公众号）发送文字或图片消息即可得到查询结果。\n"
+								+ "目前Hura还不成熟，如有改进建议请发送邮件给作者：blovemaple2010@gmail.com。\n"
+								+ "Hura后台服务代码开源，如果你是程序猿/媛朋友，可在Github上搜索“hura”。\n" + "希望Hura能帮到你。 :)", message, response);
+						return;
+					} else
+						noResponse(message, response);
 					return;
-				} else
-					noResponse(message, response);
-				return;
-			case "text":
-				String reqContent = message.getContent();
-				if (reqContent == null || StringUtils.isBlank(reqContent)) {
-					noResponse(message, response);
-					return;
-				}
-
-				if (UNSUPPORTED_MESSAGE_CONTENT.equals(reqContent)) {
-					writeResponse(NOSU, startTime, "抱歉，您发送的消息微信暂不支持。请发送文字或静态图片消息。 :)", message, response);
-				}
-
-				List<VortaroResult> results = vortaro.query(reqContent, null, QUERY_TIMEOUT);
-				if (results != null && !results.isEmpty())
-					writeResponse(SUCC, startTime, resultsToString(results), message, response);
-				else
-					writeResponse(FAIL, startTime, "Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂你输入的内容。 :(", message,
-							response);
-				return;
-			case "image":
-				String picUrl = message.getPicUrl();
-				if (picUrl == null || picUrl.isEmpty()) {
-					noResponse(message, response);
-					return;
-				}
-				OcrResult ocrResult;
-				try {
-					ocrResult = ocr.recognize(picUrl);
-				} catch (IOException e) {
-					e.printStackTrace();
-					writeResponse(SERR, startTime, "Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图片识别暂时出了点问题。请发文字吧。 :(",
-							message, response);
-					return;
-				}
-				if (ocrResult == null) {
-					writeResponse(FAIL, startTime,
-							"Mi bedaŭras, mi ne povas rekoni ĉi tiun bildon.\n抱歉，我没能识别这张图片。请发带世界语或汉语文字的，或包含清晰物体的，清晰度尽量高的图片。 :)",
-							message, response);
-					return;
-				}
-
-				String content;
-				switch (ocrResult.getType()) {
-				case LABEL:
-					content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
-							GoogleTranslate2.EO);
-					if (content == null) {
-						content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
-								GoogleTranslate2.ZH_CN);
+				case "text":
+					String reqContent = message.getContent();
+					if (reqContent == null || StringUtils.isBlank(reqContent)) {
+						noResponse(message, response);
+						return;
 					}
-					break;
-				case TEXT:
-					content = ocrResult.getResult().trim();
-					break;
-				default:
-					throw new RuntimeException("Unrecognized OCR result type: " + ocrResult.getType());
-				}
 
-				long costNow = System.currentTimeMillis() - startTime;
-				List<VortaroResult> vortaroResults = vortaro.query(content, null, (int) (QUERY_TIMEOUT - costNow));
-				String vortaroResultsString;
-				if (vortaroResults != null && !vortaroResults.isEmpty())
-					vortaroResultsString = resultsToString(vortaroResults);
-				else
-					vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，Hura无法提供以上内容的解释或翻译。 :(";
-				writeResponse(SUCC, startTime,
-						wrapOcrTextToResponse(content, ocrResult.getType()) + "\n\n" + vortaroResultsString, message,
-						response);
-				return;
-			default:
-				writeResponse(NOSU, startTime, "Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦。 :)", message,
-						response);
-				return;
+					// ChatGPT后门
+					if (chat(reqContent, message, response))
+						return;
+
+					if (UNSUPPORTED_MESSAGE_CONTENT.equals(reqContent)) {
+						writeResponse(NOSU, startTime, "抱歉，您发送的消息微信暂不支持。请发送文字或静态图片消息。 :)", message, response);
+					}
+
+					List<VortaroResult> results = vortaro.query(reqContent, null, QUERY_TIMEOUT);
+					if (results != null && !results.isEmpty())
+						writeResponse(SUCC, startTime, resultsToString(results), message, response);
+					else
+						writeResponse(FAIL, startTime, "Mi ne komprenas ĉi tiun tekston.\n抱歉，我看不懂你输入的内容。 :(", message,
+								response);
+					return;
+				case "image":
+					String picUrl = message.getPicUrl();
+					if (picUrl == null || picUrl.isEmpty()) {
+						noResponse(message, response);
+						return;
+					}
+					OcrResult ocrResult;
+					try {
+						ocrResult = ocr.recognize(picUrl);
+					} catch (IOException e) {
+						e.printStackTrace();
+						writeResponse(SERR, startTime, "Mi bedaŭras, sistemeraro estas okazinta.\n抱歉，图片识别暂时出了点问题。请发文字吧。 :(",
+								message, response);
+						return;
+					}
+					if (ocrResult == null) {
+						writeResponse(FAIL, startTime,
+								"Mi bedaŭras, mi ne povas rekoni ĉi tiun bildon.\n抱歉，我没能识别这张图片。请发带世界语或汉语文字的，或包含清晰物体的，清晰度尽量高的图片。 :)",
+								message, response);
+						return;
+					}
+
+					String content;
+					switch (ocrResult.getType()) {
+						case LABEL:
+							content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
+									GoogleTranslate2.EO);
+							if (content == null) {
+								content = googleTranslate.translate(ocrResult.getResult(), GoogleTranslate2.EN,
+										GoogleTranslate2.ZH_CN);
+							}
+							break;
+						case TEXT:
+							content = ocrResult.getResult().trim();
+							break;
+						default:
+							throw new RuntimeException("Unrecognized OCR result type: " + ocrResult.getType());
+					}
+
+					long costNow = System.currentTimeMillis() - startTime;
+					List<VortaroResult> vortaroResults = vortaro.query(content, null, (int) (QUERY_TIMEOUT - costNow));
+					String vortaroResultsString;
+					if (vortaroResults != null && !vortaroResults.isEmpty())
+						vortaroResultsString = resultsToString(vortaroResults);
+					else
+						vortaroResultsString = "【Hura】\nMi ne komprenas ĉi tiun tekston.\n抱歉，Hura无法提供以上内容的解释或翻译。 :(";
+					writeResponse(SUCC, startTime,
+							wrapOcrTextToResponse(content, ocrResult.getType()) + "\n\n" + vortaroResultsString, message,
+							response);
+					return;
+				default:
+					writeResponse(NOSU, startTime, "Mi nur komprenas tekstojn kaj bildojn.\nHura目前只认识文字和图片消息哦。 :)", message,
+							response);
+					return;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -246,6 +256,16 @@ public class RequestServlet extends HttpServlet {
 		return false;
 	}
 
+	private boolean chat(String reqContent, Message reqMessage, HttpServletResponse response)
+			throws IOException, InterruptedException {
+		if (myUserName.equals(reqMessage.getFromUserName()) && reqContent.startsWith(" ")) {
+			String resMessage = openAiApi.chat(reqContent.substring(1));
+			writeResponseWithoutLog(resMessage, reqMessage, response);
+			return true;
+		}
+		return false;
+	}
+
 	private Message parseMessage(HttpServletRequest request) throws IOException {
 		request.setCharacterEncoding("UTF-8");
 
@@ -265,12 +285,12 @@ public class RequestServlet extends HttpServlet {
 
 	private String wrapOcrTextToResponse(String content, OcrResultType type) {
 		switch (type) {
-		case LABEL:
-			return "【识别内容】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n图片中看起来没有文字，Hura认为图片的内容是：\n" + content;
-		case TEXT:
-			return "【识别文字】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n" + content;
-		default:
-			throw new RuntimeException("Unrecognized OCR result type: " + type);
+			case LABEL:
+				return "【识别内容】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n图片中看起来没有文字，Hura认为图片的内容是：\n" + content;
+			case TEXT:
+				return "【识别文字】\n（图片识别结果仅供参考，请尽量使用清晰度高的图片）\n" + content;
+			default:
+				throw new RuntimeException("Unrecognized OCR result type: " + type);
 		}
 	}
 
@@ -310,7 +330,12 @@ public class RequestServlet extends HttpServlet {
 	}
 
 	private void writeResponse(ResponseStatus status, long startTime, String resContent, Message reqMessage,
-			HttpServletResponse response) throws IOException {
+							   HttpServletResponse response) throws IOException {
+		writeResponseWithoutLog(resContent, reqMessage, response);
+		log(status, startTime, reqMessage, resContent);
+	}
+
+	private void writeResponseWithoutLog(String resContent, Message reqMessage, HttpServletResponse response) throws IOException {
 		Message resMessage = new Message();
 		resMessage.setFromUserName(reqMessage.getToUserName());
 		resMessage.setToUserName(reqMessage.getFromUserName());
@@ -323,8 +348,6 @@ public class RequestServlet extends HttpServlet {
 		String resString = XmlUtils.toXml(resMessage);
 		writer.print(resString);
 		writer.flush();
-
-		log(status, startTime, reqMessage, resContent);
 	}
 
 	private void noResponse(Message reqMessage, HttpServletResponse response) {
@@ -347,17 +370,17 @@ public class RequestServlet extends HttpServlet {
 		log.setMsgType(reqMessage == null ? "" : reqMessage.getMsgType());
 		String reqContent;
 		switch (reqMessage == null ? "" : reqMessage.getMsgType()) {
-		case "event":
-			reqContent = reqMessage.getEvent();
-			break;
-		case "text":
-			reqContent = reqMessage.getContent();
-			break;
-		case "image":
-			reqContent = reqMessage.getPicUrl();
-			break;
-		default:
-			reqContent = "";
+			case "event":
+				reqContent = reqMessage.getEvent();
+				break;
+			case "text":
+				reqContent = reqMessage.getContent();
+				break;
+			case "image":
+				reqContent = reqMessage.getPicUrl();
+				break;
+			default:
+				reqContent = "";
 		}
 		log.setRequest(reqContent);
 		log.setResponse(resContent == null ? "" : resContent);
